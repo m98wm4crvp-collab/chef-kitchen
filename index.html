@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#bd1622">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="靈感廚房">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>主廚靈感廚房</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: white tablecloth and one red line. Single phone column, bottom nav like a native app, each dish is a plate card with its own tabs */
+:root {
+  --bg: #f5f4f2;
+  --surface: #ffffff;
+  --ink: #1a1617;
+  --muted: #6c6567;
+  --line: #e2dedc;
+  --accent: #bd1622;
+  --accent-ink: #ffffff;
+  --accent-text: #a8101b;
+  --accent-soft: #fbeaeb;
+  --gold: #8f6410;
+  --gold-soft: #f8f0dd;
+  --chip: #eeebe9;
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131011; --surface: #1e1a1b; --ink: #f2eded; --muted: #a89fa1; --line: #352e30;
+    --accent: #cf2a36; --accent-ink: #ffffff; --accent-text: #ff8088; --accent-soft: #3a1a1d;
+    --gold: #e2b24a; --gold-soft: #2f2715; --chip: #2a2526;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131011; --surface: #1e1a1b; --ink: #f2eded; --muted: #a89fa1; --line: #352e30;
+  --accent: #cf2a36; --accent-ink: #ffffff; --accent-text: #ff8088; --accent-soft: #3a1a1d;
+  --gold: #e2b24a; --gold-soft: #2f2715; --chip: #2a2526;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 104px;
+}
+.wrap { max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.top { border-bottom: 3px solid var(--accent); padding-bottom: 10px; }
+.top h1 { font-family: var(--font-display); font-weight: 900; font-size: 1.7rem; margin: 0; letter-spacing: .04em; }
+.top p { margin: 2px 0 0; color: var(--muted); font-size: .9rem; }
+.view { display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > label, .label { font-weight: 700; font-size: .95rem; }
+.hint { color: var(--muted); font-size: .85rem; font-weight: 400; }
+textarea, input[type="text"], input[type="number"], input[type="password"], select {
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%;
+}
+textarea { min-height: 68px; resize: vertical; }
+textarea:focus, input:focus, select:focus, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: inherit; cursor: pointer; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: .9rem; padding: 7px 14px; border-radius: 999px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.row > * { flex: 1 1 130px; min-width: 0; }
+.labelrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.switch input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+.go { border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 1.08rem; padding: 15px; border-radius: 12px; letter-spacing: .06em; }
+.go:disabled { opacity: .6; cursor: default; }
+.ghost { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: .9rem; padding: 8px 14px; border-radius: 10px; }
+.ghost.danger { color: var(--accent-text); }
+.ghost.small { padding: 4px 10px; font-size: .82rem; }
+.status { color: var(--muted); font-size: .95rem; margin: 0; }
+.status.err { color: var(--accent-text); }
+.banner { background: var(--accent-soft); color: var(--ink); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: .92rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.note { background: var(--chip); border-radius: 8px; padding: 8px 12px; font-size: .85rem; color: var(--muted); margin: 0; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.box > h2 { font-family: var(--font-display); font-size: 1.1rem; margin: 0; }
+.kitchenline { font-size: .88rem; color: var(--muted); display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.kitchenline span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dish { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 4px 4px 14px 14px; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; }
+.dish .tag { align-self: flex-start; font-size: .75rem; letter-spacing: .1em; color: var(--accent-text); font-weight: 700; }
+.dish h2 { font-family: var(--font-display); font-weight: 900; font-size: 1.4rem; margin: 0; line-height: 1.3; text-wrap: balance; }
+.dish .tagline { margin: 0; color: var(--muted); }
+.dish h3 { font-size: .8rem; letter-spacing: .12em; color: var(--accent-text); margin: 0 0 6px; font-weight: 700; }
+.dish ol, .dish ul { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+.dish p { margin: 0; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { background: var(--chip); padding: 2px 10px; border-radius: 999px; font-size: .82rem; white-space: nowrap; }
+.pill.warn { background: var(--gold-soft); color: var(--gold); font-weight: 700; }
+.pill.st { background: var(--accent-soft); color: var(--accent-text); }
+.seg { display: flex; gap: 4px; background: var(--chip); padding: 4px; border-radius: 10px; overflow-x: auto; }
+.seg button { flex: 1 0 auto; border: 0; background: transparent; color: var(--muted); padding: 7px 10px; border-radius: 7px; font-size: .88rem; white-space: nowrap; }
+.seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgb(0 0 0 / .1); }
+.pane { display: flex; flex-direction: column; gap: 14px; }
+.ing { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; }
+.ing.c3 { grid-template-columns: minmax(0, 1fr) auto auto; }
+.ing input { padding: 5px 8px; font-family: var(--font-num); font-size: .9rem; text-align: right; width: 104px; }
+.ing.c3 input { width: 72px; }
+.ing .hd { font-size: .75rem; color: var(--muted); text-align: right; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: .9rem; }
+.serv { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.serv button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 1.1rem; }
+.cost { background: var(--gold-soft); border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; }
+.cost .big { font-size: 1.2rem; font-weight: 700; color: var(--gold); }
+.plan { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.plan th { text-align: right; font-size: .75rem; color: var(--muted); font-weight: 500; padding: 4px 0; }
+.plan th:first-child, .plan td:first-child { text-align: left; }
+.plan td { padding: 5px 0; border-top: 1px solid var(--line); text-align: right; }
+.svc li { padding-right: 0; }
+.svc .meta { display: inline-flex; gap: 6px; margin-left: 6px; vertical-align: middle; }
+.quote { border-left: 3px solid var(--line); padding-left: 12px; font-family: var(--font-display); font-weight: 700; }
+.stars { display: flex; gap: 4px; }
+.stars button { border: 0; background: none; font-size: 1.6rem; line-height: 1; color: var(--line); padding: 2px; }
+.stars button.on { color: var(--gold); }
+.photo { max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 10px; border: 1px solid var(--line); align-self: flex-start; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.adjust { display: flex; flex-direction: column; gap: 8px; border-top: 1px dashed var(--line); padding-top: 12px; }
+.empty { text-align: center; color: var(--muted); padding: 32px 12px; border: 1px dashed var(--line); border-radius: 14px; }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .9rem; }
+
+.nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+.nav button { flex: 1; max-width: 200px; border: 0; background: none; color: var(--muted); padding: 8px 4px 6px; font-size: .9rem; border-top: 3px solid transparent; margin-top: -7px; }
+.nav button[aria-current="page"] { color: var(--accent-text); font-weight: 700; border-top-color: var(--accent); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: .9rem; max-width: calc(100% - 32px); text-align: center; }
+.cook { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: flex; flex-direction: column; gap: 14px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)); }
+.cook header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.cook header b { font-family: var(--font-display); font-size: 1.1rem; min-width: 0; }
+.cook .count { color: var(--accent-text); font-family: var(--font-num); letter-spacing: .1em; }
+.cook .big { flex: 1; overflow-y: auto; font-size: clamp(1.5rem, 6.5vw, 2.3rem); line-height: 1.5; font-weight: 500; display: flex; align-items: center; }
+.cook .btns { display: flex; gap: 12px; }
+.cook .btns button { flex: 1; padding: 20px; font-size: 1.2rem; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.cook .btns button.next { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.cook .btns button:disabled { opacity: .4; }
+@media (prefers-reduced-motion: no-preference) { .dish { animation: rise .3s ease-out; } @keyframes rise { from { transform: translateY(6px); } to { transform: none; } } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>主廚靈感廚房</h1>
+    <p>無國界新菜，從靈感、備料到出餐一次想好。</p>
+  </header>
+
+  <section class="view" id="view-make">
+    <div class="banner" id="needKey" hidden><span>還沒連上 AI，要先貼上金鑰才能想菜。</span><button class="ghost small" type="button" data-go="kitchen">去設定</button></div>
+    <div class="chips" id="modeChips" role="group" aria-label="想菜方式">
+      <button class="chip" type="button" data-mode="ing">用食材想</button>
+      <button class="chip" type="button" data-mode="theme">給主題</button>
+      <button class="chip" type="button" data-mode="photo">拍菜單</button>
+      <button class="chip" type="button" data-mode="set">整套套餐</button>
+    </div>
+    <div class="field" id="themeField" hidden>
+      <label for="theme">主題 <span class="hint">例如：秋季海鮮、母親節、台灣在地食材</span></label>
+      <input type="text" id="theme">
+    </div>
+    <div class="field" id="photoField" hidden>
+      <label for="photo">拍菜單或菜名 <span class="hint">菜單、手寫菜名，或一道菜的照片</span></label>
+      <input type="file" id="photo" accept="image/*">
+      <img id="photoPreview" class="photo" alt="你選的照片" hidden>
+    </div>
+    <div class="field">
+      <div class="labelrow"><label for="ingredients">今天的食材 <span class="hint" id="ingHint"></span></label><button class="ghost small" type="button" id="micBtn" hidden>用講的</button></div>
+      <textarea id="ingredients"></textarea>
+    </div>
+    <div class="field">
+      <span class="label">大膽程度</span>
+      <div class="chips" id="boldChips" role="group" aria-label="大膽程度">
+        <button class="chip" type="button" data-bold="safe">保守</button>
+        <button class="chip" type="button" data-bold="mid">平衡</button>
+        <button class="chip" type="button" data-bold="wild">實驗</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" id="versionsField">
+        <label for="versions">一次給幾道</label>
+        <select id="versions"><option value="1">1 道</option><option value="2">2 道</option><option value="3">3 道</option></select>
+      </div>
+      <div class="field" id="coursesField" hidden>
+        <label for="courses">套餐幾道</label>
+        <select id="courses"><option value="3">3 道</option><option value="4">4 道</option><option value="5">5 道</option></select>
+      </div>
+      <div class="field">
+        <label for="servings">每道份數</label>
+        <input type="number" id="servings" min="1" max="50" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field">
+      <label for="extra">其他要求 <span class="hint">可留空，例如：不要辣、3 分鐘內出餐</span></label>
+      <input type="text" id="extra">
+    </div>
+    <label class="switch" for="costOn">
+      <span><b>算成本跟建議售價</b><br><span class="hint">先用行情估，可以改成你的進貨價</span></span>
+      <input type="checkbox" id="costOn">
+    </label>
+    <div class="field" id="pctRow" hidden>
+      <label for="pct">目標食材成本率（%）</label>
+      <input type="number" id="pct" min="10" max="70" inputmode="numeric">
+    </div>
+    <div class="kitchenline"><span id="kitchenSummary"></span><button class="ghost small" type="button" data-go="kitchen">改廚房設定</button></div>
+    <button class="go" id="goBtn" type="button">幫我想新菜</button>
+    <p class="status" id="status" role="status"></p>
+    <div class="view" id="results"></div>
+  </section>
+
+  <section class="view" id="view-saved" hidden>
+    <div class="chips" id="filterChips" role="group" aria-label="篩選">
+      <button class="chip" type="button" data-filter="all">全部</button>
+      <button class="chip" type="button" data-filter="idea">構思中</button>
+      <button class="chip" type="button" data-filter="trial">試做中</button>
+      <button class="chip" type="button" data-filter="menu">已上菜單</button>
+    </div>
+    <div class="view" id="savedList"></div>
+  </section>
+
+  <section class="view" id="view-kitchen" hidden>
+    <div class="box">
+      <h2>我的廚房</h2>
+      <p class="hint">設定一次就會記住，每次想菜都會照這裡來。</p>
+      <div class="field"><span class="label">設備器材 <span class="hint">點選你廚房有的</span></span><div class="chips" id="equipChips"></div>
+        <input type="text" id="k_equipMore" placeholder="其他設備，例如：乾式熟成櫃" aria-label="其他設備"></div>
+      <div class="field"><label for="k_seasonings">常備調味料</label><textarea id="k_seasonings"></textarea></div>
+      <div class="field"><label for="k_components">現有的醬汁和半成品 <span class="hint">新菜會盡量沿用，減少備料</span></label><textarea id="k_components" placeholder="例如：雞高湯、焦化奶油、油封蒜、柚子醋"></textarea></div>
+    </div>
+    <div class="box">
+      <h2>我的風格</h2>
+      <p class="hint">寫得越清楚，想出來的菜越像你的菜。</p>
+      <div class="field"><label for="k_position">餐廳定位</label><input type="text" id="k_position" placeholder="例如：20 席的無國界餐酒館"></div>
+      <div class="field"><label for="k_price">客單價（NT$）</label><input type="text" id="k_price" inputmode="numeric" placeholder="例如：1800"></div>
+      <div class="field"><label for="k_signature">招牌手法</label><textarea id="k_signature" placeholder="例如：炭烤、發酵、用台灣茶入菜"></textarea></div>
+      <div class="field"><label for="k_love">愛用的食材和風味</label><textarea id="k_love" placeholder="例如：柑橘、味噌、馬告"></textarea></div>
+      <div class="field"><label for="k_avoid">不用的食材</label><input type="text" id="k_avoid" placeholder="例如：香菜、內臟"></div>
+    </div>
+    <div class="box" id="aiBox">
+      <h2>AI 連線</h2>
+      <p id="aiClaude" hidden>已經連上 Claude，不用另外設定。</p>
+      <div class="pane" id="aiKey">
+        <p class="hint">這個 APP 要用 Claude API 金鑰才能想菜，依用量付費，想一次大約台幣幾毛到幾塊。</p>
+        <ol class="hint" style="margin:0;padding-left:1.3em">
+          <li>到 <a href="https://console.anthropic.com" target="_blank" rel="noopener">Claude Console</a> 註冊並加值。</li>
+          <li>建立一組 API Key，複製起來。</li>
+          <li>貼到下面。金鑰只存在這支手機裡。</li>
+        </ol>
+        <div class="field"><label for="apiKey">API 金鑰</label><input type="password" id="apiKey" autocomplete="off" placeholder="sk-ant-..."></div>
+        <div class="field"><label for="model">想菜的腦袋</label>
+          <select id="model"><option value="claude-sonnet-5-5">標準：又快又省</option><option value="claude-opus-5-5">最強：更有創意，比較貴</option></select></div>
+        <p class="note">金鑰等於你的錢包，不要給別人，也不要截圖傳出去。</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="nav" aria-label="主選單">
+  <button type="button" data-go="make">想新菜</button>
+  <button type="button" data-go="saved">我的菜</button>
+  <button type="button" data-go="kitchen">我的廚房</button>
+</nav>
+
+<div class="cook" id="cook" hidden>
+  <header><b id="cookName"></b><button class="ghost" type="button" id="cookClose">關閉</button></header>
+  <div class="seg" id="cookSeg"><button type="button" data-list="steps">做法</button><button type="button" data-list="service">出餐流程</button></div>
+  <div class="count" id="cookCount"></div>
+  <div class="big" id="cookText"></div>
+  <div class="btns"><button type="button" id="cookPrev">上一步</button><button type="button" class="next" id="cookNext">下一步</button></div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("mk_" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("mk_" + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+const EQUIP = ["瓦斯爐","烤箱","蒸烤箱","微波爐","壓力鍋","舒肥機","炸鍋","炭烤爐","果汁機","真空機","液態氮","煙燻槍"];
+const STATUS = { idea: "構思中", trial: "試做中", menu: "已上菜單" };
+const BOLD = {
+  safe: "保守：以經典搭配為主，只加一個小巧思，客人接受度高。",
+  mid: "平衡：有新意，但不冒險。",
+  wild: "實驗性：大膽、少見的組合和手法，要有驚喜，但仍然要好吃。"
+};
+
+let kitchen = Object.assign({ equip: ["瓦斯爐","烤箱","舒肥機","果汁機","真空機"], equipMore: "", seasonings: "味噌、柚子胡椒、奶油、白酒醋、海鹽", components: "", position: "", price: "", signature: "", love: "", avoid: "" }, store.get("kitchen", {}));
+let form = Object.assign({ mode: "ing", theme: "秋季海鮮前菜", ingredients: "干貝、南瓜、柚子、紅蔥頭、鴨胸", bold: "mid", versions: "2", courses: "3", servings: "1", extra: "", costOn: false, pct: "30" }, store.get("form", {}));
+let settings = Object.assign({ apiKey: "", model: "claude-sonnet-5-5" }, store.get("settings", {}));
+let saved = store.get("saved", []);
+let filter = "all";
+let sample = null, claudeChecked = !window.claude;
+let photoFile = null;
+
+const SAMPLE_DISH = {
+  example: true, course: "", name: "柚香味噌干貝・焦化南瓜泥",
+  tagline: "日式味噌的鹹甜，配上法式焦化奶油跟台灣柚子的清香。",
+  concept: "用法式手法把南瓜做成焦化奶油泥，干貝以日式味噌醃過再煎，最後用柚子皮和柚子胡椒收尾。",
+  logic: ["味道：味噌的鹹鮮和南瓜的甜互相拉抬，柚子的酸香把奶油的膩切掉。", "口感：干貝外脆內嫩，對上滑順的泥。", "溫度和香氣：熱干貝配上現刨柚子皮，一上桌先聞到香氣。"],
+  servings: 1,
+  ingredients: [
+    { item: "北海道干貝", amount: "3 顆", yield: 100, cost: 150 },
+    { item: "南瓜", amount: "120 g", yield: 75, cost: 16 },
+    { item: "無鹽奶油", amount: "20 g", yield: 100, cost: 10 },
+    { item: "白味噌", amount: "10 g", yield: 100, cost: 4 },
+    { item: "柚子皮", amount: "2 g", yield: 100, cost: 5 },
+    { item: "柚子胡椒", amount: "2 g", yield: 100, cost: 4 }
+  ],
+  steps: ["南瓜去皮切塊，蒸 15 分鐘到軟。", "奶油小火煮到榛果色，跟南瓜一起打成滑順的泥，用海鹽調味。", "干貝擦乾，表面抹薄薄一層白味噌，靜置 10 分鐘。", "熱鍋下少許油，干貝每面大火煎 60 秒，中心保持半熟。", "白酒醋加柚子胡椒拌成醬汁。"],
+  prep: ["南瓜泥：前一天做好，真空包冷藏。出餐前隔水或微波加熱到 65°C。", "干貝：開店前擦乾、抹好味噌，一份 3 顆分裝冷藏。", "柚子胡椒醬：當天調好，裝小擠壓瓶冷藏。"],
+  service: [{ step: "南瓜泥加熱，同時熱鍋", station: "熱台", min: 1 }, { step: "干貝每面煎 60 秒", station: "熱台", min: 2 }, { step: "抹泥、擺干貝、點醬、刨柚子皮", station: "出菜口", min: 1 }],
+  rush: ["南瓜泥改放保溫水浴，不用每份加熱。", "干貝一鍋最多煎 4 份，分兩鍋輪流下。"],
+  storage: ["南瓜泥：真空冷藏 3 天，冷凍 2 週。", "醃好的干貝：冷藏當天用完，不隔夜。", "柚子胡椒醬：冷藏 3 天。"],
+  trim: ["南瓜皮和籽烤乾後煮成高湯，或把南瓜籽烤脆當裝飾。", "柚子果肉榨汁，做成無酒精特調。"],
+  reuse: [],
+  plating: ["白色淺盤，南瓜泥用湯匙抹出一道弧線。", "三顆干貝沿著弧線擺放，煎面朝上。", "點上柚子胡椒醬，最後刨上新鮮柚子皮。"],
+  allergens: ["貝類", "奶", "大豆"],
+  veg: "干貝換成厚切杏鮑菇，一樣抹味噌煎，就是奶素版。",
+  season: "南瓜和柚子都是秋天當季，干貝全年穩定。",
+  menuCopy: "北海道干貝・焦化奶油南瓜・白味噌・文旦柚",
+  pitch: "這道是主廚的秋季前菜。干貝先用白味噌醃過再煎，下面是用焦化奶油做的南瓜泥，最後刨上台灣文旦的皮，建議先聞一下再吃。",
+  pairing: ["白酒：不過桶的夏布利，酸度可以帶出干貝的甜。", "無酒精：冷泡文山包種茶。"],
+  equipment: ["瓦斯爐", "果汁機"], status: "idea", rating: 0, notes: "", photo: ""
+};
+
+/* ---------- helpers ---------- */
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false && c !== 0 && c !== "") n.append(c instanceof Node ? c : String(c));
+  return n;
+}
+const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
+const strs = (v) => arr(v).map((x) => typeof x === "string" ? x : (x && (x.step || x.text)) || "").filter(Boolean);
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const split = (s) => String(s || "").split(/[,，、\n]/).map((x) => x.trim()).filter(Boolean);
+const numOf = (s) => { const m = String(s).match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : null; };
+const fmtNum = (x) => x >= 10 ? Math.round(x) : Math.round(x * 10) / 10;
+const scaleAmt = (s, r) => String(s).replace(/\d+(?:\.\d+)?/, (m) => String(fmtNum(parseFloat(m) * r)));
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600); }
+
+function cleanDish(d) {
+  return {
+    id: d.id || "", example: !!d.example, course: String(d.course || ""), name: String(d.name || ""), tagline: String(d.tagline || ""), concept: String(d.concept || ""),
+    logic: strs(d.logic), servings: Math.max(1, Math.round(Number(d.servings) || 1)),
+    ingredients: arr(d.ingredients).map((i) => ({ item: String(i.item || ""), amount: String(i.amount || ""), yield: clamp(Math.round(Number(i.yield) || 100), 10, 100), cost: Math.max(0, Math.round(Number(i.cost) || 0)) })).filter((i) => i.item),
+    steps: strs(d.steps), prep: strs(d.prep),
+    service: arr(d.service).map((s) => typeof s === "string" ? { step: s, station: "", min: 0 } : { step: String((s && s.step) || ""), station: String((s && s.station) || ""), min: Math.max(0, Number(s && s.min) || 0) }).filter((s) => s.step),
+    rush: strs(d.rush), storage: strs(d.storage), trim: strs(d.trim), reuse: strs(d.reuse), plating: strs(d.plating),
+    allergens: strs(d.allergens), veg: String(d.veg || ""), season: String(d.season || ""), menuCopy: String(d.menuCopy || ""), pitch: String(d.pitch || ""),
+    pairing: strs(d.pairing), equipment: strs(d.equipment),
+    status: STATUS[d.status] ? d.status : "idea", rating: clamp(Number(d.rating) || 0, 0, 5), notes: String(d.notes || ""), photo: String(d.photo || ""), savedAt: Number(d.savedAt) || 0
+  };
+}
+saved = saved.map(cleanDish);
+let results = (store.get("results", null) || []).map(cleanDish);
+if (!results.length) results = [cleanDish(SAMPLE_DISH)];
+
+function persistSaved() { if (!store.set("saved", saved)) toast("手機空間不夠了，刪掉幾張照片再試。"); }
+function persistResults() { store.set("results", results.filter((d) => !d.example)); }
+
+/* ---------- navigation ---------- */
+function setView(v) {
+  ["make", "saved", "kitchen"].forEach((x) => { $("view-" + x).hidden = x !== v; });
+  document.querySelectorAll(".nav button").forEach((b) => b.dataset.go === v ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  if (v === "saved") renderSaved();
+  if (v === "make") refreshMake();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.go)));
+
+/* ---------- make form ---------- */
+function bindForm(id, key) {
+  const n = $(id);
+  if (n.type === "checkbox") n.checked = !!form[key]; else n.value = form[key];
+  n.addEventListener("change", () => { form[key] = n.type === "checkbox" ? n.checked : n.value; store.set("form", form); refreshMake(); if (key === "costOn" || key === "pct") { renderResults(); } });
+}
+["theme", "ingredients", "versions", "courses", "servings", "extra", "costOn", "pct"].forEach((k) => bindForm(k, k));
+function chipGroup(boxId, attr, get, set) {
+  const paint = () => $(boxId).querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset[attr] === get() ? "true" : "false"));
+  $(boxId).querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { set(b.dataset[attr]); paint(); }));
+  paint();
+}
+chipGroup("modeChips", "mode", () => form.mode, (v) => { form.mode = v; store.set("form", form); refreshMake(); });
+chipGroup("boldChips", "bold", () => form.bold, (v) => { form.bold = v; store.set("form", form); });
+chipGroup("filterChips", "filter", () => filter, (v) => { filter = v; renderSaved(); });
+
+function allEquip() { return [...kitchen.equip, ...split(kitchen.equipMore)]; }
+function refreshMake() {
+  const m = form.mode;
+  $("themeField").hidden = m !== "theme" && m !== "set";
+  $("photoField").hidden = m !== "photo";
+  $("versionsField").hidden = m === "set";
+  $("coursesField").hidden = m !== "set";
+  $("pctRow").hidden = !form.costOn;
+  $("ingHint").textContent = m === "ing" ? "用逗號分開" : "可留空";
+  $("goBtn").textContent = m === "set" ? "幫我設計套餐" : m === "photo" ? "讀照片做食譜" : "幫我想新菜";
+  $("kitchenSummary").textContent = "廚房：" + (allEquip().join("、") || "還沒設定設備");
+  $("needKey").hidden = !claudeChecked || !!sample || !!settings.apiKey;
+}
+$("photo").addEventListener("change", () => {
+  photoFile = $("photo").files[0] || null;
+  const img = $("photoPreview");
+  if (photoFile) { img.src = URL.createObjectURL(photoFile); img.hidden = false; } else img.hidden = true;
+});
+
+/* voice input */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  $("micBtn").hidden = false;
+  $("micBtn").addEventListener("click", () => {
+    try {
+      const r = new SR(); r.lang = "zh-TW"; r.interimResults = false;
+      $("micBtn").textContent = "聽你說…";
+      r.onresult = (e) => { const t = e.results[0][0].transcript.replace(/[。\s]+/g, "、").replace(/、$/, ""); const box = $("ingredients"); box.value = (box.value.trim() ? box.value.trim() + "、" : "") + t; form.ingredients = box.value; store.set("form", form); };
+      r.onerror = () => toast("這裡不能用語音，可以改按鍵盤上的麥克風。");
+      r.onend = () => { $("micBtn").textContent = "用講的"; };
+      r.start();
+    } catch (e) { $("micBtn").textContent = "用講的"; toast("這裡不能用語音，可以改按鍵盤上的麥克風。"); }
+  });
+}
+
+/* ---------- kitchen settings ---------- */
+EQUIP.forEach((name) => {
+  const b = el("button", { class: "chip", type: "button", "aria-pressed": kitchen.equip.includes(name) ? "true" : "false" }, name);
+  b.addEventListener("click", () => {
+    const on = b.getAttribute("aria-pressed") !== "true";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    kitchen.equip = on ? [...kitchen.equip, name] : kitchen.equip.filter((x) => x !== name);
+    store.set("kitchen", kitchen);
+  });
+  $("equipChips").append(b);
+});
+["equipMore", "seasonings", "components", "position", "price", "signature", "love", "avoid"].forEach((k) => {
+  const n = $("k_" + k); n.value = kitchen[k];
+  n.addEventListener("change", () => { kitchen[k] = n.value.trim(); store.set("kitchen", kitchen); });
+});
+["apiKey", "model"].forEach((k) => {
+  const n = $(k); n.value = settings[k];
+  n.addEventListener("change", () => { settings[k] = n.value.trim(); store.set("settings", settings); if (k === "apiKey" && settings.apiKey) toast("金鑰存好了，可以開始想菜。"); });
+});
+
+/* ---------- prompts ---------- */
+const FORMAT = `只回一個 JSON 陣列，不要其他文字、不要 markdown。每個元素的格式：
+{"course":"套餐才填，例如 前菜、湯、主菜、甜點；不是套餐就空字串",
+"name":"菜名","tagline":"一句話介紹","concept":"融合了哪些國家的技法和風味，兩句",
+"logic":["味道怎麼平衡（酸甜鹹鮮苦）","口感怎麼對比","溫度或香氣的層次"],
+"servings":份數,
+"ingredients":[{"item":"食材或調味料","amount":"處理後實際用到的淨重，例如 120 g","yield":淨料率百分比整數（不用處理的寫 100，例如魚去骨後 55）,"cost":買進這份用量（已含損耗）的新台幣整數}],
+"steps":["完整做法，一步一句，寫出溫度和時間"],
+"prep":["前置作業：開店前或前一天先做好的部分，做到什麼程度、怎麼分裝"],
+"service":[{"step":"點單後的出餐步驟","station":"冷台、熱台、甜點台、出菜口 其中之一","min":大約幾分鐘}],
+"rush":["尖峰時同時出 10 份，流程要怎麼調整"],
+"storage":["每個半成品怎麼保存（冷藏、冷凍、真空）、可放幾天"],
+"trim":["邊角料和剩料可以做成什麼"],
+"reuse":["這道菜沿用了哪些現有的醬汁或半成品，沒有就空陣列"],
+"plating":["擺盤，每點一句"],
+"allergens":["過敏原，例如 甲殼類、貝類、魚、奶、蛋、麩質、堅果、大豆、芝麻"],
+"veg":"能不能改成素食版、怎麼改，一句",
+"season":"食材的當季性，一句",
+"menuCopy":"印在菜單上給客人看的描述，一行",
+"pitch":"外場介紹這道菜的口語說法，兩三句",
+"pairing":["建議搭配的酒","建議搭配的無酒精飲品"],
+"equipment":["用到的設備"]}
+每一項都要簡短實用。全部用繁體中文，價格用台灣市場行情。`;
+
+function kitchenContext() {
+  const k = kitchen;
+  const names = saved.slice(0, 40).map((d) => d.name).join("、");
+  return [
+    "你是米其林等級的無國界料理主廚顧問，幫一位專業廚師構思可以放上菜單販售的新菜。",
+    "風格：無國界的組合風味，混搭不同國家的技法和味道，但要好吃、做得出來、能穩定出餐。每道菜的風味組合都要說得出道理。",
+    k.position && `餐廳定位：${k.position}`,
+    k.price && `客單價：約 NT$ ${k.price}，食材等級和份量要配合。`,
+    k.signature && `主廚的招牌手法（要帶入，讓菜有他的個人風格）：${k.signature}`,
+    k.love && `主廚愛用的食材和風味：${k.love}`,
+    k.avoid && `絕對不要用：${k.avoid}`,
+    `常備調味料：${k.seasonings || "一般廚房常備調味料"}`,
+    `廚房設備（只能用這些）：${allEquip().join("、") || "瓦斯爐"}`,
+    k.components && `現有菜單已經有的醬汁和半成品（新菜盡量沿用，減少備料負擔）：${k.components}`,
+    `現在是台灣的 ${new Date().getMonth() + 1} 月，優先用當季食材。`,
+    "這是實際餐廳要用的菜：能提前做的放進前置作業，讓點單後出餐又快又穩；保存溫度和期限要符合食品安全。",
+    names && `主廚已經有這些菜，新菜不要跟它們太像：${names}`
+  ].filter(Boolean);
+}
+function buildPrompt() {
+  const m = form.mode, n = form.versions, ing = form.ingredients.trim();
+  const lines = kitchenContext();
+  lines.push("大膽程度：" + BOLD[form.bold]);
+  if (m === "ing") lines.push(`今天的食材：${ing || "未提供，請自行挑選當季食材"}`, "以這些食材為主角，可以只用一部分，也可以少量補充常見配料。", `請設計 ${n} 道風格明顯不同的菜。`);
+  if (m === "theme") lines.push(`主題：${form.theme.trim() || "自由發揮"}`, ing && `手上有的食材（優先使用）：${ing}`, `請設計 ${n} 道風格明顯不同的菜。`);
+  if (m === "set") lines.push(`請設計一套 ${form.courses} 道的套餐。`, `主題：${form.theme.trim() || "自由發揮"}`, ing && `手上有的食材（優先使用）：${ing}`, "套餐要有輕重節奏，從清爽到濃郁再收尾；每道的主食材、烹調手法和主要味型不要重複；course 要填這道在套餐裡的位置，並照上菜順序排列。");
+  if (m === "photo") lines.push(`附上的照片是菜單、菜名或一道菜。先讀出照片裡的菜名，挑最多 ${n} 道，為每道寫出能在餐廳販售的完整食譜。可以用無國界手法重新詮釋，但要保留原本菜色的精神。如果照片裡看不出任何菜，就依照片裡的食材或氛圍設計。`, ing && `手上有的食材（優先使用）：${ing}`);
+  lines.push(`每道 ${Math.max(1, Number(form.servings) || 1)} 份。`);
+  if (form.extra.trim()) lines.push(`其他要求：${form.extra.trim()}`);
+  lines.push(FORMAT);
+  return lines.filter(Boolean).join("\n");
+}
+
+/* ---------- AI ---------- */
+function parseJSON(t) {
+  t = String(t).trim();
+  const f = t.match(/```(?:json)?\s*([\s\S]*?)```/); if (f) t = f[1].trim();
+  try { return JSON.parse(t); } catch (e) {}
+  const a = t.search(/[\[{]/), b = Math.max(t.lastIndexOf("]"), t.lastIndexOf("}"));
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
+  throw { code: "invalid_json" };
+}
+function shrink(file, max, q) {
+  return new Promise((ok, no) => {
+    const img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas"); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src); ok(c.toDataURL("image/jpeg", q));
+    };
+    img.onerror = () => no({ code: "image_rejected" });
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function callApi(prompt, file) {
+  const content = [];
+  if (file) { const url = await shrink(file, 1568, 0.85); content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: url.split(",")[1] } }); }
+  content.push({ type: "text", text: prompt });
+  let res;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": settings.apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: settings.model, max_tokens: 16000, messages: [{ role: "user", content }] })
+    });
+  } catch (e) { throw { code: "network" }; }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = (data.error && data.error.message) || "";
+    if (res.status === 401) throw { code: "key" };
+    if (res.status === 429) throw { code: "rate_limited" };
+    if (/credit|billing/i.test(msg)) throw { code: "credit" };
+    if (res.status === 404) throw { code: "model" };
+    if (res.status >= 500) throw { code: "busy" };
+    throw { code: "upstream_error" };
+  }
+  if (data.stop_reason === "max_tokens") throw { code: "too_long" };
+  return parseJSON((data.content || []).filter((c) => c.type === "text").map((c) => c.text).join(""));
+}
+function copyFor(code) {
+  return ({
+    not_granted: "你沒有允許這個 APP 使用 Claude，所以沒辦法想菜。",
+    sampling_disabled: "你的帳號目前不能使用這個功能。",
+    rate_limited: "用得有點快，等一兩分鐘再按一次。",
+    session_expired: "登入過期了，請重新登入 Claude 再試。",
+    invalid_json: "這次的回答格式跑掉了，再按一次試試。",
+    refused: "這個要求沒辦法處理，換個說法再試。",
+    images_unavailable: "這裡沒辦法傳照片。",
+    image_rejected: "這張照片讀不了，換一張再試。",
+    key: "金鑰不對，到「我的廚房」檢查一下有沒有貼完整。",
+    credit: "API 帳戶餘額不夠了，到 Claude Console 加值後再試。",
+    model: "這個金鑰用不了選的腦袋，到「我的廚房」改成「標準」。",
+    busy: "Claude 現在比較忙，等一下再按一次。",
+    network: "網路連不上，檢查一下網路再試。",
+    too_long: "一次要的太多，寫到一半被截斷了。少要一道再試。",
+    nokey: "還沒連上 AI。到「我的廚房」最下面貼上 API 金鑰。"
+  })[code] || "連線出了點問題，再按一次試試。";
+}
+async function ask(prompt, statusEl, file) {
+  statusEl.className = "status";
+  statusEl.textContent = "主廚思考中，大約要半分鐘到兩分鐘，先別關掉…";
+  try {
+    let data;
+    if (sample) data = await sample.json(prompt, file ? { cache: false, images: file } : { cache: false });
+    else if (settings.apiKey) data = await callApi(prompt, file);
+    else throw { code: "nokey" };
+    const list = Array.isArray(data) ? data : (data && Array.isArray(data.dishes) ? data.dishes : [data]);
+    const dishes = list.filter((d) => d && d.name).map(cleanDish);
+    if (!dishes.length) throw { code: "invalid_json" };
+    statusEl.textContent = "";
+    return dishes;
+  } catch (e) {
+    statusEl.className = "status err";
+    statusEl.textContent = copyFor(e && e.code);
+    return null;
+  }
+}
+$("goBtn").addEventListener("click", async () => {
+  if (form.mode === "photo" && !photoFile) { $("status").className = "status err"; $("status").textContent = "先拍一張照片或選一張圖。"; return; }
+  $("goBtn").disabled = true;
+  const dishes = await ask(buildPrompt(), $("status"), form.mode === "photo" ? photoFile : null);
+  $("goBtn").disabled = false;
+  if (dishes) { results = dishes; persistResults(); renderResults(); $("results").scrollIntoView({ behavior: "smooth", block: "start" }); }
+});
+
+/* ---------- dish card ---------- */
+function recipeText(d) {
+  const L = [];
+  const sec = (t, a) => { if (a && a.length) L.push("", "【" + t + "】", ...a); };
+  L.push((d.course ? d.course + "｜" : "") + d.name, d.tagline);
+  sec(`材料（${d.servings} 份）`, d.ingredients.map((i) => `・${i.item} ${i.amount}`));
+  sec("做法", d.steps.map((s, i) => `${i + 1}. ${s}`));
+  sec("前置作業", d.prep.map((s) => "・" + s));
+  sec("出餐流程", d.service.map((s, i) => `${i + 1}. ${s.step}${s.station ? "（" + s.station + (s.min ? "，約 " + s.min + " 分" : "") + "）" : ""}`));
+  sec("尖峰出餐", d.rush.map((s) => "・" + s));
+  sec("保存方式", d.storage.map((s) => "・" + s));
+  sec("擺盤", d.plating.map((s) => "・" + s));
+  if (d.allergens.length) L.push("", "過敏原：" + d.allergens.join("、"));
+  return L.filter((x) => x != null).join("\n");
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast("已複製，可以貼到 LINE 傳給同事。"); }
+  catch (e) {
+    const t = el("textarea", { style: "position:fixed;opacity:0" }); t.value = text; document.body.append(t); t.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e2) {}
+    t.remove(); toast(ok ? "已複製，可以貼到 LINE 傳給同事。" : "這裡沒辦法複製。");
+  }
+}
+
+function dishCard(d, ctx) {
+  const card = el("article", { class: "dish" });
+  let tab = "recipe", planN = 20;
+  const changed = () => { ctx.saved ? persistSaved() : persistResults(); draw(); };
+  const quiet = () => { ctx.saved ? persistSaved() : persistResults(); };
+  const setServ = (n) => {
+    if (n < 1 || n > 500) return;
+    const r = n / d.servings;
+    d.ingredients.forEach((i) => { i.amount = scaleAmt(i.amount, r); i.cost = Math.round(i.cost * r); });
+    d.servings = n; changed();
+  };
+  const sec = (title, node) => el("div", {}, el("h3", {}, title), node);
+  const list = (a, ordered) => el(ordered ? "ol" : "ul", {}, a.map((s) => el("li", {}, s)));
+
+  function recipePane() {
+    const minus = el("button", { type: "button", "aria-label": "少一份", onclick: () => setServ(d.servings - 1) }, "−");
+    const plus = el("button", { type: "button", "aria-label": "多一份", onclick: () => setServ(d.servings + 1) }, "+");
+    const ing = el("div", { class: "ing" });
+    d.ingredients.forEach((i) => {
+      const amt = el("input", { type: "text", value: i.amount, "aria-label": i.item + " 份量" });
+      amt.addEventListener("change", () => { const a = numOf(i.amount), b = numOf(amt.value); if (a && b != null) i.cost = Math.round(i.cost * b / a); i.amount = amt.value.trim(); changed(); });
+      ing.append(el("span", {}, i.item), amt);
+    });
+    return el("div", { class: "pane" },
+      el("div", {}, el("h3", {}, "材料　份量可以直接改"),
+        el("div", { class: "serv" }, el("span", {}, "份數"), minus, el("span", { class: "num" }, d.servings), plus, el("span", { class: "hint" }, "按 ＋－ 自動換算")), ing),
+      d.steps.length && sec("做法", list(d.steps, true)),
+      d.plating.length && sec("擺盤", list(d.plating)),
+      d.equipment.length && el("div", { class: "pills" }, d.equipment.map((s) => el("span", { class: "pill" }, s)))
+    );
+  }
+  function opsPane() {
+    const total = d.service.reduce((s, x) => s + x.min, 0);
+    const svc = el("ol", { class: "svc" }, d.service.map((s) => el("li", {}, s.step, (s.station || s.min) ? el("span", { class: "meta" }, s.station && el("span", { class: "pill st" }, s.station), s.min ? el("span", { class: "pill num" }, "約 " + s.min + " 分") : null) : null)));
+    const n = el("input", { type: "number", min: "1", max: "999", value: planN, inputmode: "numeric", "aria-label": "預計賣幾份", style: "max-width:110px" });
+    const table = el("table", { class: "plan" });
+    const fill = () => {
+      const r = planN / d.servings;
+      table.replaceChildren(el("tr", {}, el("th", {}, "食材"), el("th", {}, "淨用量"), el("th", {}, "要買的量")),
+        ...d.ingredients.map((i) => el("tr", {}, el("td", {}, i.item), el("td", { class: "num" }, scaleAmt(i.amount, r)), el("td", { class: "num" }, scaleAmt(i.amount, r * 100 / i.yield)))));
+    };
+    n.addEventListener("input", () => { planN = clamp(Math.round(Number(n.value) || 1), 1, 999); fill(); });
+    fill();
+    return el("div", { class: "pane" },
+      d.prep.length && sec("前置作業", list(d.prep)),
+      d.service.length && sec("出餐流程" + (total ? `　點單到上桌約 ${total} 分鐘` : ""), svc),
+      d.rush.length && sec("尖峰出餐　同時 10 份", list(d.rush)),
+      d.storage.length && el("div", {}, el("h3", {}, "保存方式"), list(d.storage), el("p", { class: "note", style: "margin-top:8px" }, "保存天數和溫度是估算，實際請以你的專業判斷和衛生法規為準。")),
+      d.reuse.length && sec("沿用現有半成品", list(d.reuse)),
+      d.trim.length && sec("邊角料利用", list(d.trim)),
+      el("div", {}, el("h3", {}, "備料換算"), el("div", { class: "serv" }, el("span", {}, "今晚預計賣"), n, el("span", {}, "份")), table,
+        el("p", { class: "hint", style: "margin-top:6px" }, "「要買的量」已經算進去皮去骨的損耗。"))
+    );
+  }
+  function flavorPane() {
+    return el("div", { class: "pane" },
+      d.concept && sec("風味概念", el("p", {}, d.concept)),
+      d.logic.length && sec("為什麼這樣搭", list(d.logic)),
+      d.season && sec("當季性", el("p", {}, d.season)),
+      d.menuCopy && sec("菜單文案", el("p", { class: "quote" }, d.menuCopy)),
+      d.pitch && sec("外場介紹詞", el("p", {}, d.pitch)),
+      d.pairing.length && sec("餐酒搭配", list(d.pairing)),
+      d.veg && sec("素食版", el("p", {}, d.veg))
+    );
+  }
+  function costPane() {
+    const pct = clamp(Number(form.pct) || 30, 5, 90) / 100;
+    const total = d.ingredients.reduce((s, i) => s + i.cost, 0), per = total / d.servings, price = Math.ceil(per / pct / 10) * 10;
+    const g = el("div", { class: "ing c3" }, el("span", {}), el("span", { class: "hd" }, "淨料率 %"), el("span", { class: "hd" }, "成本 NT$"));
+    d.ingredients.forEach((i) => {
+      const y = el("input", { type: "number", min: "10", max: "100", value: i.yield, inputmode: "numeric", "aria-label": i.item + " 淨料率" });
+      y.addEventListener("change", () => { const ny = clamp(Math.round(Number(y.value) || 100), 10, 100); i.cost = Math.round(i.cost * i.yield / ny); i.yield = ny; changed(); });
+      const c = el("input", { type: "number", min: "0", value: i.cost, inputmode: "numeric", "aria-label": i.item + " 成本" });
+      c.addEventListener("change", () => { i.cost = Math.max(0, Math.round(Number(c.value) || 0)); changed(); });
+      g.append(el("span", {}, i.item, " ", el("span", { class: "hint num" }, i.amount)), y, c);
+    });
+    return el("div", { class: "pane" },
+      el("div", { class: "cost" },
+        el("span", {}, `食材總成本（${d.servings} 份）`), el("span", { class: "num" }, "NT$ " + total),
+        el("span", {}, "每份成本"), el("span", { class: "num" }, "NT$ " + Math.round(per)),
+        el("span", {}, `建議售價（成本率 ${Math.round(pct * 100)}%）`), el("span", { class: "num big" }, "NT$ " + price)),
+      el("div", {}, el("h3", {}, "每樣食材　都可以改成你的實際數字"), g),
+      el("p", { class: "note" }, "淨料率是處理後還能用的比例。例如魚去骨後剩 55%，就要多買，成本也比較高。價格是行情估算，改成你的進貨價會更準。")
+    );
+  }
+  function logPane() {
+    const sel = el("select", { "aria-label": "狀態" }, Object.entries(STATUS).map(([k, v]) => el("option", { value: k, selected: d.status === k }, v)));
+    sel.addEventListener("change", () => { d.status = sel.value; quiet(); });
+    const stars = el("div", { class: "stars", role: "group", "aria-label": "試做評分" }, [1, 2, 3, 4, 5].map((n) => el("button", { type: "button", class: n <= d.rating ? "on" : "", "aria-label": n + " 分", onclick: () => { d.rating = d.rating === n ? 0 : n; changed(); } }, "★")));
+    const notes = el("textarea", { placeholder: "試做筆記：哪裡要改、客人反應、下次試什麼", "aria-label": "試做筆記" }); notes.value = d.notes;
+    notes.addEventListener("change", () => { d.notes = notes.value; quiet(); });
+    const file = el("input", { type: "file", accept: "image/*", "aria-label": "成品照" });
+    file.addEventListener("change", async () => { if (!file.files[0]) return; try { d.photo = await shrink(file.files[0], 720, 0.72); changed(); } catch (e) { toast("這張照片讀不了。"); } });
+    return el("div", { class: "pane" },
+      el("div", { class: "row" }, el("div", { class: "field" }, el("span", { class: "label" }, "狀態"), sel), el("div", { class: "field" }, el("span", { class: "label" }, "試做評分"), stars)),
+      el("div", { class: "field" }, el("span", { class: "label" }, "試做筆記"), notes),
+      el("div", { class: "field" }, el("span", { class: "label" }, "成品照"), d.photo && el("img", { class: "photo", src: d.photo, alt: d.name + " 成品照" }), file,
+        d.photo && el("button", { class: "ghost small", type: "button", style: "align-self:flex-start", onclick: () => { d.photo = ""; changed(); } }, "拿掉照片"))
+    );
+  }
+
+  function draw() {
+    card.replaceChildren();
+    if (d.example) card.append(el("span", { class: "tag" }, "範例　按上面的按鈕產生你的菜"));
+    else if (d.course || ctx.saved) card.append(el("span", { class: "tag" }, [d.course, ctx.saved ? STATUS[d.status] : "", ctx.saved && d.rating ? "★".repeat(d.rating) : ""].filter(Boolean).join("　")));
+    card.append(el("h2", {}, d.name));
+    if (d.tagline) card.append(el("p", { class: "tagline" }, d.tagline));
+    if (d.allergens.length) card.append(el("div", { class: "pills", "aria-label": "過敏原" }, d.allergens.map((a) => el("span", { class: "pill warn" }, a))));
+
+    const tabs = [["recipe", "食譜"], ["ops", "備料出餐"], ["flavor", "風味賣點"]];
+    if (form.costOn) tabs.push(["cost", "成本"]);
+    if (ctx.saved) tabs.push(["log", "試做紀錄"]);
+    if (!tabs.some((t) => t[0] === tab)) tab = "recipe";
+    card.append(el("div", { class: "seg", role: "tablist" }, tabs.map(([k, v]) => el("button", { type: "button", role: "tab", "aria-selected": k === tab ? "true" : "false", onclick: () => { tab = k; draw(); } }, v))));
+    card.append({ recipe: recipePane, ops: opsPane, flavor: flavorPane, cost: costPane, log: logPane }[tab]());
+
+    const actions = el("div", { class: "actions" });
+    if (!d.example && !ctx.saved) {
+      const b = el("button", { class: "ghost", type: "button", disabled: !!d._saved }, d._saved ? "已存起來" : "存起來");
+      b.addEventListener("click", () => {
+        const copy = cleanDish(d); copy.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); copy.savedAt = Date.now();
+        saved.unshift(copy); persistSaved(); d._saved = true; draw(); toast("存好了，在「我的菜」可以看到。");
+      });
+      actions.append(b);
+    }
+    if (d.steps.length || d.service.length) actions.append(el("button", { class: "ghost", type: "button", onclick: () => openCook(d) }, "廚房模式"));
+    actions.append(el("button", { class: "ghost", type: "button", onclick: () => copyText(recipeText(d)) }, "複製食譜"));
+    if (navigator.share) actions.append(el("button", { class: "ghost", type: "button", onclick: () => { navigator.share({ title: d.name, text: recipeText(d) }).catch(() => {}); } }, "分享"));
+    if (ctx.saved) {
+      const del = el("button", { class: "ghost danger", type: "button" }, "刪除");
+      del.addEventListener("click", () => {
+        const yes = el("button", { class: "ghost danger", type: "button" }, "確定刪除"), no = el("button", { class: "ghost", type: "button" }, "取消");
+        const c = el("div", { class: "confirm" }, el("span", {}, `要刪掉「${d.name}」嗎？`), yes, no);
+        no.addEventListener("click", () => c.replaceWith(del));
+        yes.addEventListener("click", () => { saved = saved.filter((x) => x !== d); persistSaved(); renderSaved(); toast("已刪除。"); });
+        del.replaceWith(c);
+      });
+      actions.append(del);
+    }
+    card.append(actions);
+
+    if (!d.example) {
+      const box = el("input", { type: "text", placeholder: "想怎麼改？例如：干貝換鮮蝦、更清爽", "aria-label": "想怎麼改" });
+      const st = el("p", { class: "status" });
+      const n = el("select", { "aria-label": "要幾個版本" }, el("option", { value: "1" }, "改 1 版"), el("option", { value: "2" }, "改 2 版"), el("option", { value: "3" }, "改 3 版"));
+      const btn = el("button", { class: "ghost", type: "button" }, "調整這道菜");
+      btn.addEventListener("click", async () => {
+        const req = box.value.trim();
+        if (!req) { st.className = "status err"; st.textContent = "先寫你想怎麼改。"; return; }
+        btn.disabled = true;
+        const { photo, notes, rating, status, savedAt, id, _saved, example, ...base } = d;
+        const prompt = [...kitchenContext(), `下面是一道菜（JSON），請依照廚師的要求調整，給 ${n.value} 個不同的調整版本。`, `廚師的要求：${req}`, `原本的菜：${JSON.stringify(base)}`, FORMAT].join("\n");
+        const dishes = await ask(prompt, st, null);
+        btn.disabled = false;
+        if (dishes) { results = [...dishes, ...results.filter((x) => !x.example)].slice(0, 12); persistResults(); setView("make"); renderResults(); $("results").scrollIntoView({ behavior: "smooth", block: "start" }); toast("調整好的版本在最上面。"); }
+      });
+      card.append(el("div", { class: "adjust" }, el("span", { class: "label" }, "調整這道菜"), box, el("div", { class: "row" }, n, btn), st));
+    }
+  }
+  draw();
+  return card;
+}
+function renderResults() { $("results").replaceChildren(...results.map((d) => dishCard(d, { saved: false }))); }
+function renderSaved() {
+  const list = saved.filter((d) => filter === "all" || d.status === filter);
+  if (!saved.length) return $("savedList").replaceChildren(el("div", { class: "empty" }, "還沒有存任何菜。想出喜歡的菜之後，按「存起來」就會出現在這裡。"));
+  if (!list.length) return $("savedList").replaceChildren(el("div", { class: "empty" }, "這個分類還沒有菜。"));
+  $("savedList").replaceChildren(...list.map((d) => dishCard(d, { saved: true })));
+}
+
+/* ---------- kitchen mode ---------- */
+let cook = { d: null, key: "steps", i: 0, lock: null };
+function cookItems() { return cook.key === "steps" ? cook.d.steps : cook.d.service.map((s) => s.step + (s.station ? `（${s.station}）` : "")); }
+function paintCook() {
+  const items = cookItems();
+  $("cookSeg").querySelectorAll("button").forEach((b) => { b.setAttribute("aria-selected", b.dataset.list === cook.key ? "true" : "false"); b.hidden = !(b.dataset.list === "steps" ? cook.d.steps : cook.d.service).length; });
+  $("cookCount").textContent = `${cook.i + 1} / ${items.length}`;
+  $("cookText").textContent = items[cook.i] || "";
+  $("cookPrev").disabled = cook.i === 0;
+  $("cookNext").textContent = cook.i >= items.length - 1 ? "完成" : "下一步";
+}
+function openCook(d) {
+  cook.d = d; cook.key = d.steps.length ? "steps" : "service"; cook.i = 0;
+  $("cookName").textContent = d.name; $("cook").hidden = false; paintCook();
+  try { if (navigator.wakeLock) navigator.wakeLock.request("screen").then((l) => { cook.lock = l; }).catch(() => {}); } catch (e) {}
+}
+function closeCook() { $("cook").hidden = true; try { if (cook.lock) cook.lock.release(); } catch (e) {} cook.lock = null; }
+$("cookClose").addEventListener("click", closeCook);
+$("cookPrev").addEventListener("click", () => { if (cook.i > 0) { cook.i--; paintCook(); } });
+$("cookNext").addEventListener("click", () => { if (cook.i >= cookItems().length - 1) closeCook(); else { cook.i++; paintCook(); } });
+$("cookSeg").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { cook.key = b.dataset.list; cook.i = 0; paintCook(); }));
+
+/* ---------- start ---------- */
+setView("make");
+renderResults();
+
+(async () => {
+  if (window.claude) {
+    try {
+      sample = await claude.use("sample");
+      claudeChecked = true;
+      if (sample) { $("aiClaude").hidden = false; $("aiKey").hidden = true; }
+      refreshMake();
+      if (!store.get("migrated", false)) {
+        const db = await claude.use("db"), user = await claude.use("user"), uid = user ? await user.id() : null;
+        if (db && uid) {
+          const snap = await db.collection("data/users/" + uid).get();
+          snap.docs.forEach((doc) => { const d = cleanDish(doc.data()); d.id = d.id || doc.id; if (!saved.some((x) => x.name === d.name)) saved.push(d); });
+          persistSaved(); store.set("migrated", true);
+        }
+      }
+    } catch (e) { claudeChecked = true; refreshMake(); }
+  }
+  if (document.querySelector('link[rel="manifest"]') && "serviceWorker" in navigator) { try { navigator.serviceWorker.register("sw.js"); } catch (e) {} }
+})();
+</script>
+
+</body>
+</html>
