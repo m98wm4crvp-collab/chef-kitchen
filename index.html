@@ -261,6 +261,13 @@ button { font: inherit; cursor: pointer; }
       <p class="hint">存下喜歡的餐廳做菜方式。想菜時可以選參考哪一間，或全部綜合，每道菜會標出用了哪間的哪個手法。</p>
       <div class="view" id="styleList"></div>
       <button class="ghost" type="button" id="addStyle" style="align-self:flex-start">新增一間餐廳</button>
+      <div class="field stylebox">
+        <span class="label">用截圖分析 <span class="hint">截幾張那間店的貼文，照片和文字說明都截進來，最多 10 張</span></span>
+        <input type="text" id="shotName" placeholder="餐廳名稱（可留空）" aria-label="餐廳名稱">
+        <input type="file" id="shots" accept="image/*" multiple aria-label="選截圖">
+        <button class="go" type="button" id="shotGo">分析並存起來</button>
+        <p class="status" id="shotStatus" role="status"></p>
+      </div>
     </div>
     <div class="box" id="aiBox">
       <h2>AI 連線</h2>
@@ -506,6 +513,33 @@ function renderStyles() {
 }
 $("addStyle").addEventListener("click", () => { styles.push({ id: "s" + Date.now().toString(36), name: "", notes: "" }); saveStyles(); renderStyles(); });
 $("styleRef").addEventListener("change", () => { form.styleRef = $("styleRef").value; store.set("form", form); });
+$("shotGo").addEventListener("click", async () => {
+  const st = $("shotStatus"), files = [...$("shots").files].slice(0, 10), hint = $("shotName").value.trim();
+  if (!files.length) { st.className = "status err"; st.textContent = "先選幾張截圖。"; return; }
+  const prompt = [
+    "附上的是一間餐廳的 Instagram 貼文截圖（照片和文字說明）。請像專業主廚一樣分析這間餐廳的做菜風格，整理成之後想新菜時可以參考的重點。",
+    "只根據截圖裡看得到的內容，看不出來的不要編。",
+    hint && `餐廳名稱：${hint}`,
+    '只回一個 JSON 物件：{"name":"餐廳名稱，看不出來就空字串","notes":"多行文字，一行一個重點，依序寫：料理底子和食材來源、招牌手法、風味組合公式、口感和香氣元素、擺盤和器皿、定位和氛圍"}。繁體中文。'
+  ].filter(Boolean).join("\n");
+  $("shotGo").disabled = true; st.className = "status"; st.textContent = "分析中，大約要半分鐘到一分鐘…";
+  try {
+    let data;
+    if (sample) {
+      const lim = await sample.limits().catch(() => null);
+      if (!lim || !lim.images) throw { code: "images_unavailable" };
+      data = await sample.json(prompt, { cache: false, images: files.slice(0, lim.images.maxCount) });
+    } else if (settings.apiKey) data = parseJSON(await callApi(prompt, files));
+    else throw { code: "nokey" };
+    const notes = String((data && data.notes) || "").trim();
+    if (!notes) throw { code: "invalid_json" };
+    styles.push({ id: "s" + Date.now().toString(36), name: hint || String(data.name || "").trim() || "新餐廳", notes });
+    saveStyles(); renderStyles();
+    st.textContent = ""; $("shots").value = ""; $("shotName").value = "";
+    toast("分析好了，已經存進風格參考。");
+  } catch (e) { st.className = "status err"; st.textContent = copyFor(e && e.code); }
+  $("shotGo").disabled = false;
+});
 renderStyles();
 refreshStyleSelect();
 
@@ -615,7 +649,7 @@ function shrink(file, max, q) {
 }
 async function callApi(prompt, file) {
   const content = [];
-  if (file) { const url = await shrink(file, 1568, 0.85); content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: url.split(",")[1] } }); }
+  for (const f of (file ? (Array.isArray(file) ? file : [file]) : [])) { const url = await shrink(f, 1568, 0.85); content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: url.split(",")[1] } }); }
   content.push({ type: "text", text: prompt });
   let res;
   try {
