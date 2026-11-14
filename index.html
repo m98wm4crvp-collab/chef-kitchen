@@ -168,7 +168,7 @@ button { font: inherit; cursor: pointer; }
     </div>
     <div class="field" id="themeField" hidden>
       <label for="theme">主題 <span class="hint">例如：秋季海鮮、母親節、台灣在地食材</span></label>
-      <input type="text" id="theme">
+      <input type="text" id="theme" placeholder="例如：秋季海鮮前菜">
     </div>
     <div class="field" id="photoField" hidden>
       <label for="photo">拍菜單或菜名 <span class="hint">菜單、手寫菜名，或一道菜的照片</span></label>
@@ -177,7 +177,7 @@ button { font: inherit; cursor: pointer; }
     </div>
     <div class="field">
       <div class="labelrow"><label for="ingredients">今天的食材 <span class="hint" id="ingHint"></span></label><button class="ghost small" type="button" id="micBtn" hidden>用講的</button></div>
-      <textarea id="ingredients"></textarea>
+      <textarea id="ingredients" placeholder="例如：鴨胸、南瓜、紅蔥頭"></textarea>
     </div>
     <div class="field">
       <span class="label">大膽程度</span>
@@ -235,7 +235,7 @@ button { font: inherit; cursor: pointer; }
       <p class="hint">設定一次就會記住，每次想菜都會照這裡來。</p>
       <div class="field"><span class="label">設備器材 <span class="hint">點選你廚房有的</span></span><div class="chips" id="equipChips"></div>
         <input type="text" id="k_equipMore" placeholder="其他設備，例如：乾式熟成櫃" aria-label="其他設備"></div>
-      <div class="field"><label for="k_seasonings">常備調味料</label><textarea id="k_seasonings"></textarea></div>
+      <div class="field"><label for="k_seasonings">常備調味料</label><textarea id="k_seasonings" placeholder="可留空。留空就是一般專業廚房有的都能用"></textarea></div>
       <div class="field"><label for="k_components">現有的醬汁和半成品 <span class="hint">新菜會盡量沿用，減少備料</span></label><textarea id="k_components" placeholder="例如：雞高湯、焦化奶油、油封蒜、柚子醋"></textarea></div>
     </div>
     <div class="box">
@@ -295,9 +295,13 @@ const BOLD = {
   wild: "實驗性：大膽、少見的組合和手法，要有驚喜，但仍然要好吃。"
 };
 
-let kitchen = Object.assign({ equip: ["瓦斯爐","烤箱","舒肥機","果汁機","真空機"], equipMore: "", seasonings: "味噌、柚子胡椒、奶油、白酒醋、海鹽", components: "", position: "", price: "", signature: "", love: "", avoid: "" }, store.get("kitchen", {}));
-let form = Object.assign({ mode: "ing", theme: "秋季海鮮前菜", ingredients: "干貝、南瓜、柚子、紅蔥頭、鴨胸", bold: "mid", versions: "2", courses: "3", servings: "1", extra: "", costOn: false, pct: "30" }, store.get("form", {}));
+let kitchen = Object.assign({ equip: ["瓦斯爐","烤箱","舒肥機","果汁機","真空機"], equipMore: "", seasonings: "", components: "", position: "", price: "", signature: "", love: "", avoid: "" }, store.get("kitchen", {}));
+let form = Object.assign({ mode: "ing", theme: "", ingredients: "", bold: "mid", versions: "2", courses: "3", servings: "1", extra: "", costOn: false, pct: "30" }, store.get("form", {}));
 let settings = Object.assign({ apiKey: "", model: "claude-sonnet-5-5" }, store.get("settings", {}));
+if (kitchen.seasonings === "味噌、柚子胡椒、奶油、白酒醋、海鹽") kitchen.seasonings = "";
+if (form.ingredients === "干貝、南瓜、柚子、紅蔥頭、鴨胸") form.ingredients = "";
+if (form.theme === "秋季海鮮前菜") form.theme = "";
+let recent = store.get("recent", []);
 let saved = store.get("saved", []);
 let filter = "all";
 let sample = null, claudeChecked = !window.claude;
@@ -491,7 +495,9 @@ function kitchenContext() {
     k.signature && `主廚的招牌手法（要帶入，讓菜有他的個人風格）：${k.signature}`,
     k.love && `主廚愛用的食材和風味：${k.love}`,
     k.avoid && `絕對不要用：${k.avoid}`,
-    `常備調味料：${k.seasonings || "一般廚房常備調味料"}`,
+    k.seasonings ? `廚房常備的調味料（只是可以用，不是每道都要用；專業廚房常見的其他各國調味料也可以用）：${k.seasonings}` : "調味料：專業廚房常見的各國調味料都可以用。",
+    "創意要求：不要每次都靠同一種招牌味道。同一批的每道菜，主要味型、醬汁和手法都要不同，並從不同國家的料理找靈感。",
+    recent.length && `最近已經想過這些菜，新菜的主要風味、醬汁、香氣來源都要跟它們明顯不同，不要重複用同樣的關鍵調味：${recent.join("；")}`,
     `廚房設備（只能用這些）：${allEquip().join("、") || "瓦斯爐"}`,
     k.components && `現有菜單已經有的醬汁和半成品（新菜盡量沿用，減少備料負擔）：${k.components}`,
     `現在是台灣的 ${new Date().getMonth() + 1} 月，優先用當季食材。`,
@@ -603,7 +609,10 @@ $("goBtn").addEventListener("click", async () => {
   $("goBtn").disabled = true;
   const dishes = await ask(buildPrompt(), $("status"), form.mode === "photo" ? photoFile : null);
   $("goBtn").disabled = false;
-  if (dishes) { results = dishes; persistResults(); renderResults(); $("results").scrollIntoView({ behavior: "smooth", block: "start" }); }
+  if (dishes) {
+    recent = [...dishes.map((d) => d.name + (d.menuCopy ? "（" + d.menuCopy + "）" : "")), ...recent].slice(0, 15); store.set("recent", recent);
+    results = dishes; persistResults(); renderResults(); $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 });
 
 /* ---------- dish card ---------- */
