@@ -193,7 +193,7 @@ button { font: inherit; cursor: pointer; }
       </div>
     </div>
     <div class="field">
-      <label for="styleRef">風格參考 <span class="hint">也可以在「其他要求」直接寫「參考迴回」或「全部風格」</span></label>
+      <label for="styleRef">風格參考 <span class="hint">也可以在「其他要求」直接寫「參考迴回」「全部甜點」或「全部風格」</span></label>
       <select id="styleRef"></select>
     </div>
     <div class="row">
@@ -263,7 +263,10 @@ button { font: inherit; cursor: pointer; }
       <button class="ghost" type="button" id="addStyle" style="align-self:flex-start">新增一間餐廳</button>
       <div class="field stylebox">
         <span class="label">用截圖分析 <span class="hint">截幾張那間店的貼文，照片和文字說明都截進來，最多 10 張</span></span>
-        <input type="text" id="shotName" placeholder="餐廳名稱（可留空）" aria-label="餐廳名稱">
+        <div class="row">
+          <div class="field" style="flex:3 1 180px"><input type="text" id="shotName" placeholder="餐廳名稱（可留空）" aria-label="餐廳名稱"></div>
+          <div class="field" style="flex:1 1 90px"><select id="shotCat" aria-label="分類"><option value="料理">料理</option><option value="甜點">甜點</option></select></div>
+        </div>
         <input type="file" id="shots" accept="image/*" multiple aria-label="選截圖">
         <button class="go" type="button" id="shotGo">分析並存起來</button>
         <p class="status" id="shotStatus" role="status"></p>
@@ -325,10 +328,26 @@ if (form.ingredients === "干貝、南瓜、柚子、紅蔥頭、鴨胸") form.i
 if (form.theme === "秋季海鮮前菜") form.theme = "";
 let recent = store.get("recent", []);
 const HUIHUI = {
-  id: "huihui", name: "迴回 Huí Huí（瑞芳水湳洞）",
+  id: "huihui", cat: "料理", name: "迴回 Huí Huí（瑞芳水湳洞）",
   notes: "法式小酒館技法，配台灣在地、少見的食材（小黑鮪、煙仔虎、土鬠、九孔、葡萄蝦、川七、雲林新鮮豬血、在地水果）。\n盤裡一定有漬物或發酵提味：發酵黑豆、醃茴香頭、梅子、果皮發酵。\n用整隻、用少見部位，零浪費：舌、頰、蝦頭、豬血、鴨腿。\n用台灣食材重做法國經典，例如用豬血做法式血腸。\n大量香草（紫蘇、香茅、青檸葉、山上香草青醬），穿插東南亞風味（叻沙、sambal、印尼雞湯）。\n常加一個炸的元素做口感：炸羽衣甘藍、炸米球、炸蝦頭。\n組合公式：一個主角＋一個酸（醋、漬物、果實）＋一個香（香草、香料油）＋一個脆或一個醬。\n下酒菜定位，味道鮮明，適合配自然酒。\n擺盤自然隨性：復古花瓷盤、手作陶碗，食材自然堆疊，顏色靠食材本身。"
 };
-let styles = store.get("styles", null) || [HUIHUI];
+const WOOWOO = {
+  id: "woowoo", cat: "甜點", name: "窩巷 Hidden Lane（台中）",
+  notes: "台中外帶甜點店，法式甜點底子，以新鮮水果蛋糕、戚風和小塔為主。\n結構清楚固定：脆塔殼＋堅果奶油杏仁餡＋大溪地香草卡士達或香草餡，上面放當季新鮮水果。\n大溪地香草餡幾乎每款都有，當作招牌基底香氣。\n用台灣在地當季水果：大湖草莓、無籽綠葡萄、荔枝、水蜜桃、葡萄柚、栗子。\n東方茶和花香入甜點：烏龍茶慕斯、伯爵海綿蛋糕、茉莉花茶、抹茶、橙花、接骨木。\n層次公式：一個濃郁基底（栗子、巧克力、堅果）＋一個明亮酸味內餡（莓果 coulis、自製檸檬果醬）＋一個香氣（茶、花、香草）＋一個脆（塔殼、可可脂脆片、珍珠糖泡芙）。\n用透明晶凍做裝飾：香草凍片、荔枝酒凍，做出晶亮感。\n會跟上流行變化：杜拜巧克力、聖多諾黑、黑芝麻甘納許配無花果醬。\n外型乾淨簡約，單人份小塔和蛋糕櫃甜點為主，重視季節更替。"
+};
+const ASAKO = {
+  id: "asako", cat: "甜點", name: "Asako Iwayanagi（東京等等力）",
+  notes: "東京甜點名店，招牌是像寶石盒一樣在玻璃杯裡層層堆疊的季節聖代（Parfait Bijou）。\n以季節水果為主角（初物草莓、柿子、西洋梨），每一季換菜單。\n大膽把蔬菜和香草放進甜點：冬季蔬菜的溫和甜味、月桂葉、杜松子、百里香、紅紫蘇。\n用茶和酒做香氣層次：紅茶 crémeux、香檳果凍、熱紅酒醬汁、咖啡摩卡。\n組合公式：一個季節水果主角＋一個堅果的濃郁（開心果）＋一個茶或香料的香氣＋一個酸甜醬汁或果凍＋多種口感（冰淇淋、蛋白霜、脆片、果凍）。\n經典組合加一個意外元素：草莓配開心果，再藏進紅茶和香檳。\n醬汁常另外附上，讓客人自己淋，增加儀式感。\n擺盤精緻立體、有故事主題：高腳玻璃杯、蛋白霜做成樹的造型、果實糖片像寶石一樣點綴。\n每道甜點都搭配飲品：咖啡、原創花草茶、甜點酒。"
+};
+const PRESETS = [HUIHUI, WOOWOO, ASAKO];
+const CATS = ["料理", "甜點"];
+let styles = store.get("styles", null);
+let presetsSeen = store.get("presetsSeen", null);
+if (presetsSeen === null) presetsSeen = styles ? ["huihui"] : [];
+if (!styles) styles = [];
+PRESETS.forEach((p) => { if (!presetsSeen.includes(p.id)) { if (!styles.some((s) => s.id === p.id)) styles.push({ ...p }); presetsSeen.push(p.id); } });
+styles.forEach((s) => { if (!CATS.includes(s.cat)) s.cat = s.id === "woowoo" || s.id === "asako" ? "甜點" : "料理"; });
+store.set("styles", styles); store.set("presetsSeen", presetsSeen);
 let saved = store.get("saved", []);
 let filter = "all";
 let sample = null, claudeChecked = !window.claude;
@@ -488,7 +507,13 @@ EQUIP.forEach((name) => {
 function refreshStyleSelect() {
   if (form.styleRef !== "none" && form.styleRef !== "all" && !styles.some((s) => s.id === form.styleRef)) form.styleRef = "none";
   if (form.styleRef === "all" && styles.length < 2) form.styleRef = styles.length ? styles[0].id : "none";
-  $("styleRef").replaceChildren(el("option", { value: "none" }, "不參考"), ...styles.map((s) => el("option", { value: s.id }, s.name || "未命名的餐廳")), styles.length > 1 ? el("option", { value: "all" }, "全部綜合") : null);
+  if (String(form.styleRef).startsWith("cat:") && styles.filter((s) => s.cat === form.styleRef.slice(4)).length < 2) form.styleRef = "none";
+  const groups = CATS.map((c) => {
+    const list = styles.filter((s) => s.cat === c);
+    if (!list.length) return null;
+    return el("optgroup", { label: c }, ...list.map((s) => el("option", { value: s.id }, s.name || "未命名的餐廳")), list.length > 1 ? el("option", { value: "cat:" + c }, "全部" + c + "綜合") : null);
+  });
+  $("styleRef").replaceChildren(el("option", { value: "none" }, "不參考"), ...groups, styles.length > 1 ? el("option", { value: "all" }, "全部風格綜合") : null);
   $("styleRef").value = form.styleRef;
 }
 function saveStyles() { store.set("styles", styles); refreshStyleSelect(); }
@@ -500,6 +525,8 @@ function renderStyles() {
     notes.value = s.notes;
     name.addEventListener("change", () => { s.name = name.value.trim(); saveStyles(); });
     notes.addEventListener("change", () => { s.notes = notes.value.trim(); saveStyles(); });
+    const cat = el("select", { "aria-label": "分類" }, CATS.map((c) => el("option", { value: c, selected: s.cat === c }, c)));
+    cat.addEventListener("change", () => { s.cat = cat.value; saveStyles(); renderStyles(); });
     const del = el("button", { class: "ghost small danger", type: "button" }, "刪除");
     del.addEventListener("click", () => {
       const yes = el("button", { class: "ghost small danger", type: "button" }, "確定刪除"), no = el("button", { class: "ghost small", type: "button" }, "取消");
@@ -508,10 +535,12 @@ function renderStyles() {
       yes.addEventListener("click", () => { styles = styles.filter((x) => x !== s); saveStyles(); renderStyles(); toast("已刪除。"); });
       del.replaceWith(c);
     });
-    return el("div", { class: "field stylebox" }, el("div", { class: "labelrow" }, el("span", { class: "label" }, s.name || "新餐廳"), del), name, notes);
+    return el("div", { class: "field stylebox" }, el("div", { class: "labelrow" }, el("span", { class: "label" }, el("span", { class: "pill st", style: "margin-right:6px" }, s.cat), s.name || "新餐廳"), del), el("div", { class: "row" }, el("div", { class: "field", style: "flex:3 1 180px" }, name), el("div", { class: "field", style: "flex:1 1 90px" }, cat)), notes);
   }));
+  const order = [...styles].sort((a, b) => CATS.indexOf(a.cat) - CATS.indexOf(b.cat));
+  if (order.some((s, i) => s !== styles[i])) { styles = order; store.set("styles", styles); renderStyles(); }
 }
-$("addStyle").addEventListener("click", () => { styles.push({ id: "s" + Date.now().toString(36), name: "", notes: "" }); saveStyles(); renderStyles(); });
+$("addStyle").addEventListener("click", () => { styles.push({ id: "s" + Date.now().toString(36), cat: "料理", name: "", notes: "" }); saveStyles(); renderStyles(); });
 $("styleRef").addEventListener("change", () => { form.styleRef = $("styleRef").value; store.set("form", form); });
 $("shotGo").addEventListener("click", async () => {
   const st = $("shotStatus"), files = [...$("shots").files].slice(0, 10), hint = $("shotName").value.trim();
@@ -533,7 +562,7 @@ $("shotGo").addEventListener("click", async () => {
     else throw { code: "nokey" };
     const notes = String((data && data.notes) || "").trim();
     if (!notes) throw { code: "invalid_json" };
-    styles.push({ id: "s" + Date.now().toString(36), name: hint || String(data.name || "").trim() || "新餐廳", notes });
+    styles.push({ id: "s" + Date.now().toString(36), cat: $("shotCat").value, name: hint || String(data.name || "").trim() || "新餐廳", notes });
     saveStyles(); renderStyles();
     st.textContent = ""; $("shots").value = ""; $("shotName").value = "";
     toast("分析好了，已經存進風格參考。");
@@ -577,7 +606,10 @@ function styleKeys(s) { return String(s.name || "").split(/[\s（）()、,，]+/
 function styleContext(said) {
   said = String(said || "");
   let list = [];
-  if (/全部風格|所有風格|全部的風格|所有的風格/.test(said) || form.styleRef === "all") list = styles;
+  const catSaid = /(全部|所有)(的)?甜點/.test(said) ? "甜點" : /(全部|所有)(的)?料理/.test(said) ? "料理" : "";
+  if (catSaid) list = styles.filter((s) => s.cat === catSaid);
+  else if (/全部風格|所有風格|全部的風格|所有的風格/.test(said) || form.styleRef === "all") list = styles;
+  else if (String(form.styleRef).startsWith("cat:")) list = styles.filter((s) => s.cat === form.styleRef.slice(4));
   else {
     list = styles.filter((s) => s.id === form.styleRef || styleKeys(s).some((k) => said.toLowerCase().includes(k.toLowerCase())));
   }
@@ -585,7 +617,8 @@ function styleContext(said) {
   if (!list.length) return [];
   return [
     list.length > 1 ? "風格參考：綜合下面幾間餐廳的做菜思路，可以自由混搭。" : "風格參考：照下面這間餐廳的做菜思路。",
-    ...list.map((s) => `【${s.name}】\n${s.notes}`),
+    list.every((s) => s.cat === "甜點") ? "這次參考的都是甜點店，請設計甜點；如果主廚的要求或主題是鍋的菜，就把甜點的手法和組合思路用在料理上。" : "",
+    ...list.map((s) => `【${s.name}】（${s.cat}）\n${s.notes}`),
     "只參考思路和手法，不要照抄他們的菜，菜要是主廚自己的。每道菜都要在 influences 標出用了哪間餐廳的哪個手法，from 填上面【】裡的餐廳名稱。"
   ];
 }
