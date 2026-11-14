@@ -339,14 +339,18 @@ const ASAKO = {
   id: "asako", cat: "甜點", name: "Asako Iwayanagi（東京等等力）",
   notes: "東京甜點名店，招牌是像寶石盒一樣在玻璃杯裡層層堆疊的季節聖代（Parfait Bijou）。\n以季節水果為主角（初物草莓、柿子、西洋梨），每一季換菜單。\n大膽把蔬菜和香草放進甜點：冬季蔬菜的溫和甜味、月桂葉、杜松子、百里香、紅紫蘇。\n用茶和酒做香氣層次：紅茶 crémeux、香檳果凍、熱紅酒醬汁、咖啡摩卡。\n組合公式：一個季節水果主角＋一個堅果的濃郁（開心果）＋一個茶或香料的香氣＋一個酸甜醬汁或果凍＋多種口感（冰淇淋、蛋白霜、脆片、果凍）。\n經典組合加一個意外元素：草莓配開心果，再藏進紅茶和香檳。\n醬汁常另外附上，讓客人自己淋，增加儀式感。\n擺盤精緻立體、有故事主題：高腳玻璃杯、蛋白霜做成樹的造型、果實糖片像寶石一樣點綴。\n每道甜點都搭配飲品：咖啡、原創花草茶、甜點酒。"
 };
-const PRESETS = [HUIHUI, WOOWOO, ASAKO];
+const KITOYA = {
+  id: "kitoya", cat: "甜點", name: "Kitoya キトヤ製菓（新北土城）",
+  notes: "日系手作甜點工作室，全預約制，招牌是整模鮮奶油水果蛋糕、戚風、布丁和每月限定帕菲。\n日本關東甜點店的影響很深：雪白鮮奶油、乾淨的擠花邊、水果當主角。\n跟著台灣水果季走：香水草莓、淡雪草莓、水蜜桃、麝香葡萄和無籽葡萄、柿子、栗子，一季一個主場。\n招牌是水果的排列：葡萄、草莓切成薄片圍成花圈或漩渦，每顆依水果大小微調，像花藝作品。\n台灣茶入甜點：東方美人戚風、焙茶奶霜、伯爵茶脆脆。\n敢用意外的鹹香元素做清爽感：花椒橄欖油牛奶冰淇淋、香料奶油酥餅、肉桂。\n帕菲層次公式：一個茶香的蛋糕或奶霜＋一個奶香冰淇淋＋季節水果＋咖啡凍或果凍＋脆片酥餅，上下層口味要有變化。\n裝飾點綴蒔蘿、迷迭香等香草和小蛋白霜，自然清新。\n畫面溫暖安靜：深色木頭、和風窗格、手寫字和月曆，整體像日本小店的生活感。"
+};
+const PRESETS = [HUIHUI, WOOWOO, ASAKO, KITOYA];
 const CATS = ["料理", "甜點"];
 let styles = store.get("styles", null);
 let presetsSeen = store.get("presetsSeen", null);
 if (presetsSeen === null) presetsSeen = styles ? ["huihui"] : [];
 if (!styles) styles = [];
 PRESETS.forEach((p) => { if (!presetsSeen.includes(p.id)) { if (!styles.some((s) => s.id === p.id)) styles.push({ ...p }); presetsSeen.push(p.id); } });
-styles.forEach((s) => { if (!CATS.includes(s.cat)) s.cat = s.id === "woowoo" || s.id === "asako" ? "甜點" : "料理"; });
+styles.forEach((s) => { if (!CATS.includes(s.cat)) s.cat = ["woowoo", "asako", "kitoya"].includes(s.id) ? "甜點" : "料理"; });
 store.set("styles", styles); store.set("presetsSeen", presetsSeen);
 let saved = store.get("saved", []);
 let filter = "all";
