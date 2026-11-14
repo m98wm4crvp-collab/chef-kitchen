@@ -165,6 +165,7 @@ button { font: inherit; cursor: pointer; }
 
   <section class="view" id="view-make">
     <div class="banner" id="needKey" hidden><span>還沒連上 AI，要先貼上金鑰才能想菜。</span><button class="ghost small" type="button" data-go="kitchen">去設定</button></div>
+    <div class="banner" id="needClaude" hidden><span id="needClaudeText"></span><button class="ghost small" type="button" id="permBtn" hidden></button></div>
     <div class="chips" id="modeChips" role="group" aria-label="想菜方式">
       <button class="chip" type="button" data-mode="ing">用食材想</button>
       <button class="chip" type="button" data-mode="theme">給主題</button>
@@ -469,7 +470,7 @@ function refreshMake() {
   $("ingHint").textContent = m === "ing" ? "用逗號分開" : "可留空";
   $("goBtn").textContent = m === "set" ? "幫我設計套餐" : m === "photo" ? "讀照片做食譜" : "幫我想新菜";
   $("kitchenSummary").textContent = "廚房：" + (allEquip().join("、") || "還沒設定設備");
-  $("needKey").hidden = !claudeChecked || !!sample || !!settings.apiKey;
+  $("needKey").hidden = !!window.claude || !claudeChecked || !!sample || !!settings.apiKey;
 }
 $("photo").addEventListener("change", () => {
   photoFile = $("photo").files[0] || null;
@@ -740,7 +741,7 @@ function copyFor(code) {
     busy: "Claude 現在比較忙，等一下再按一次。",
     network: "網路連不上，檢查一下網路再試。",
     too_long: "一次要的太多，寫到一半被截斷了。少要一道再試。",
-    nokey: "還沒連上 AI。到「我的廚房」最下面貼上 API 金鑰。"
+    nokey: window.claude ? "這裡目前沒辦法使用 Claude 想菜，請看最上面紅色提示怎麼處理。" : "還沒連上 AI。到「我的廚房」最下面貼上 API 金鑰。"
   })[code] || "連線出了點問題，再按一次試試。";
 }
 async function ask(prompt, statusEl, file) {
@@ -1021,6 +1022,30 @@ $("cookPrev").addEventListener("click", () => { if (cook.i > 0) { cook.i--; pain
 $("cookNext").addEventListener("click", () => { if (cook.i >= cookItems().length - 1) closeCook(); else { cook.i++; paintCook(); } });
 $("cookSeg").querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { cook.key = b.dataset.list; cook.i = 0; paintCook(); }));
 
+async function diagnose() {
+  let perms = null, st = "unavailable";
+  try { perms = await claude.use("permissions"); if (perms) st = await perms.state("sample"); } catch (e) {}
+  const btn = $("permBtn");
+  $("needClaude").hidden = false; btn.hidden = true;
+  if (st === "denied") {
+    $("needClaudeText").textContent = "你還沒允許這個 APP 使用 Claude，所以沒辦法想菜。";
+    btn.textContent = "打開權限設定"; btn.hidden = false;
+    btn.onclick = async () => {
+      try { await perms.manage(); } catch (e) { toast("請從頁面上方的選單找到「權限」，把 Claude 打開。"); return; }
+      if ((await perms.state("sample")) === "granted") location.reload();
+    };
+  } else if (st === "prompt" || st === "granted") {
+    $("needClaudeText").textContent = "要先允許這個 APP 使用你的 Claude，才能想菜。";
+    btn.textContent = "允許"; btn.hidden = false;
+    btn.onclick = async () => {
+      const r = await perms.request(["sample"]);
+      if (r.sample === "granted") location.reload(); else toast("沒有允許，所以還不能想菜。");
+    };
+  } else {
+    $("needClaudeText").textContent = "你的帳號在這裡沒辦法用 Claude 想菜。請確認已登入 Claude，或改用電腦的瀏覽器打開試試。";
+  }
+}
+
 /* ---------- start ---------- */
 setView("make");
 renderResults();
@@ -1030,7 +1055,8 @@ renderResults();
     try {
       sample = await claude.use("sample");
       claudeChecked = true;
-      if (sample) { $("aiClaude").hidden = false; $("aiKey").hidden = true; }
+      $("aiClaude").hidden = false; $("aiKey").hidden = true;
+      if (!sample) { $("aiClaude").textContent = "目前沒有連上 Claude，請看「想新菜」最上面的提示。"; diagnose(); }
       refreshMake();
       if (!store.get("migrated", false)) {
         const db = await claude.use("db"), user = await claude.use("user"), uid = user ? await user.id() : null;
