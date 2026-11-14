@@ -104,6 +104,10 @@ button { font: inherit; cursor: pointer; }
 .pill { background: var(--chip); padding: 2px 10px; border-radius: 999px; font-size: .82rem; white-space: nowrap; }
 .pill.warn { background: var(--gold-soft); color: var(--gold); font-weight: 700; }
 .pill.st { background: var(--accent-soft); color: var(--accent-text); }
+.pill.src { white-space: normal; background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.pill.src b { color: var(--ink); font-weight: 700; }
+.stylebox { border-top: 1px solid var(--line); padding-top: 12px; }
+.stylebox textarea { min-height: 170px; }
 .seg { display: flex; gap: 4px; background: var(--chip); padding: 4px; border-radius: 10px; overflow-x: auto; }
 .seg button { flex: 1 0 auto; border: 0; background: transparent; color: var(--muted); padding: 7px 10px; border-radius: 7px; font-size: .88rem; white-space: nowrap; }
 .seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgb(0 0 0 / .1); }
@@ -188,6 +192,10 @@ button { font: inherit; cursor: pointer; }
         <button class="chip" type="button" data-bold="wild">實驗</button>
       </div>
     </div>
+    <div class="field">
+      <label for="styleRef">風格參考 <span class="hint">也可以在「其他要求」直接寫「參考迴回」或「全部風格」</span></label>
+      <select id="styleRef"></select>
+    </div>
     <div class="row">
       <div class="field" id="versionsField">
         <label for="versions">一次給幾道</label>
@@ -248,6 +256,12 @@ button { font: inherit; cursor: pointer; }
       <div class="field"><label for="k_love">愛用的食材和風味</label><textarea id="k_love" placeholder="例如：柑橘、味噌、馬告"></textarea></div>
       <div class="field"><label for="k_avoid">不用的食材</label><input type="text" id="k_avoid" placeholder="例如：香菜、內臟"></div>
     </div>
+    <div class="box">
+      <h2>風格參考</h2>
+      <p class="hint">存下喜歡的餐廳做菜方式。想菜時可以選參考哪一間，或全部綜合，每道菜會標出用了哪間的哪個手法。</p>
+      <div class="view" id="styleList"></div>
+      <button class="ghost" type="button" id="addStyle" style="align-self:flex-start">新增一間餐廳</button>
+    </div>
     <div class="box" id="aiBox">
       <h2>AI 連線</h2>
       <p id="aiClaude" hidden>已經連上 Claude，不用另外設定。</p>
@@ -297,12 +311,17 @@ const BOLD = {
 };
 
 let kitchen = Object.assign({ equip: ["瓦斯爐","烤箱","舒肥機","果汁機","真空機"], equipMore: "", seasonings: "", components: "", position: "", price: "", signature: "", love: "", avoid: "" }, store.get("kitchen", {}));
-let form = Object.assign({ mode: "ing", theme: "", ingredients: "", bold: "mid", versions: "2", courses: "3", servings: "1", extra: "", costOn: false, pct: "30" }, store.get("form", {}));
+let form = Object.assign({ mode: "ing", theme: "", ingredients: "", bold: "mid", versions: "2", courses: "3", servings: "1", extra: "", costOn: false, pct: "30", styleRef: "none" }, store.get("form", {}));
 let settings = Object.assign({ apiKey: "", model: "claude-sonnet-5-5" }, store.get("settings", {}));
 if (kitchen.seasonings === "味噌、柚子胡椒、奶油、白酒醋、海鹽") kitchen.seasonings = "";
 if (form.ingredients === "干貝、南瓜、柚子、紅蔥頭、鴨胸") form.ingredients = "";
 if (form.theme === "秋季海鮮前菜") form.theme = "";
 let recent = store.get("recent", []);
+const HUIHUI = {
+  id: "huihui", name: "迴回 Huí Huí（瑞芳水湳洞）",
+  notes: "法式小酒館技法，配台灣在地、少見的食材（小黑鮪、煙仔虎、土鬠、九孔、葡萄蝦、川七、雲林新鮮豬血、在地水果）。\n盤裡一定有漬物或發酵提味：發酵黑豆、醃茴香頭、梅子、果皮發酵。\n用整隻、用少見部位，零浪費：舌、頰、蝦頭、豬血、鴨腿。\n用台灣食材重做法國經典，例如用豬血做法式血腸。\n大量香草（紫蘇、香茅、青檸葉、山上香草青醬），穿插東南亞風味（叻沙、sambal、印尼雞湯）。\n常加一個炸的元素做口感：炸羽衣甘藍、炸米球、炸蝦頭。\n組合公式：一個主角＋一個酸（醋、漬物、果實）＋一個香（香草、香料油）＋一個脆或一個醬。\n下酒菜定位，味道鮮明，適合配自然酒。\n擺盤自然隨性：復古花瓷盤、手作陶碗，食材自然堆疊，顏色靠食材本身。"
+};
+let styles = store.get("styles", null) || [HUIHUI];
 let saved = store.get("saved", []);
 let filter = "all";
 let sample = null, claudeChecked = !window.claude;
@@ -370,6 +389,7 @@ function cleanDish(d) {
     rush: strs(d.rush), storage: strs(d.storage), trim: strs(d.trim), reuse: strs(d.reuse), plating: strs(d.plating),
     allergens: strs(d.allergens), veg: String(d.veg || ""), season: String(d.season || ""), menuCopy: String(d.menuCopy || ""), pitch: String(d.pitch || ""),
     pairing: strs(d.pairing), equipment: strs(d.equipment),
+    influences: arr(d.influences).filter((x) => x && x.from).map((x) => ({ from: String(x.from), what: String(x.what || "") })),
     tips: (d.tips && typeof d.tips === "object" && !Array.isArray(d.tips)) ? d.tips : {},
     qa: arr(d.qa).filter((x) => x && x.q && x.a).map((x) => ({ q: String(x.q), a: String(x.a) })),
     status: STATUS[d.status] ? d.status : "idea", rating: clamp(Number(d.rating) || 0, 0, 5), notes: String(d.notes || ""), photo: String(d.photo || ""), savedAt: Number(d.savedAt) || 0
@@ -458,6 +478,37 @@ EQUIP.forEach((name) => {
   const n = $("k_" + k); n.value = kitchen[k];
   n.addEventListener("change", () => { kitchen[k] = n.value.trim(); store.set("kitchen", kitchen); });
 });
+function refreshStyleSelect() {
+  if (form.styleRef !== "none" && form.styleRef !== "all" && !styles.some((s) => s.id === form.styleRef)) form.styleRef = "none";
+  if (form.styleRef === "all" && styles.length < 2) form.styleRef = styles.length ? styles[0].id : "none";
+  $("styleRef").replaceChildren(el("option", { value: "none" }, "不參考"), ...styles.map((s) => el("option", { value: s.id }, s.name || "未命名的餐廳")), styles.length > 1 ? el("option", { value: "all" }, "全部綜合") : null);
+  $("styleRef").value = form.styleRef;
+}
+function saveStyles() { store.set("styles", styles); refreshStyleSelect(); }
+function renderStyles() {
+  if (!styles.length) return $("styleList").replaceChildren(el("p", { class: "hint" }, "還沒有存任何餐廳。"));
+  $("styleList").replaceChildren(...styles.map((s) => {
+    const name = el("input", { type: "text", value: s.name, placeholder: "餐廳名稱", "aria-label": "餐廳名稱" });
+    const notes = el("textarea", { placeholder: "他們的做菜方式：食材、手法、風味組合、擺盤", "aria-label": "做菜方式" });
+    notes.value = s.notes;
+    name.addEventListener("change", () => { s.name = name.value.trim(); saveStyles(); });
+    notes.addEventListener("change", () => { s.notes = notes.value.trim(); saveStyles(); });
+    const del = el("button", { class: "ghost small danger", type: "button" }, "刪除");
+    del.addEventListener("click", () => {
+      const yes = el("button", { class: "ghost small danger", type: "button" }, "確定刪除"), no = el("button", { class: "ghost small", type: "button" }, "取消");
+      const c = el("div", { class: "confirm" }, yes, no);
+      no.addEventListener("click", () => c.replaceWith(del));
+      yes.addEventListener("click", () => { styles = styles.filter((x) => x !== s); saveStyles(); renderStyles(); toast("已刪除。"); });
+      del.replaceWith(c);
+    });
+    return el("div", { class: "field stylebox" }, el("div", { class: "labelrow" }, el("span", { class: "label" }, s.name || "新餐廳"), del), name, notes);
+  }));
+}
+$("addStyle").addEventListener("click", () => { styles.push({ id: "s" + Date.now().toString(36), name: "", notes: "" }); saveStyles(); renderStyles(); });
+$("styleRef").addEventListener("change", () => { form.styleRef = $("styleRef").value; store.set("form", form); });
+renderStyles();
+refreshStyleSelect();
+
 ["apiKey", "model"].forEach((k) => {
   const n = $(k); n.value = settings[k];
   n.addEventListener("change", () => { settings[k] = n.value.trim(); store.set("settings", settings); if (k === "apiKey" && settings.apiKey) toast("金鑰存好了，可以開始想菜。"); });
@@ -484,10 +535,27 @@ const FORMAT = `只回一個 JSON 陣列，不要其他文字、不要 markdown�
 "menuCopy":"印在菜單上給客人看的描述，一行",
 "pitch":"外場介紹這道菜的口語說法，兩三句",
 "pairing":["建議搭配的酒","建議搭配的無酒精飲品"],
-"equipment":["用到的設備"]}
+"equipment":["用到的設備"],
+"influences":[{"from":"參考的餐廳名稱","what":"這道菜哪個部分用了他們的什麼手法，一句"}]（沒有風格參考就空陣列）}
 每一項都要簡短實用。全部用繁體中文，價格用台灣市場行情。`;
 
-function kitchenContext() {
+function styleKeys(s) { return String(s.name || "").split(/[\s（）()、,，]+/).filter((t) => t.length >= 2); }
+function styleContext(said) {
+  said = String(said || "");
+  let list = [];
+  if (/全部風格|所有風格|全部的風格|所有的風格/.test(said) || form.styleRef === "all") list = styles;
+  else {
+    list = styles.filter((s) => s.id === form.styleRef || styleKeys(s).some((k) => said.toLowerCase().includes(k.toLowerCase())));
+  }
+  list = list.filter((s) => s.notes);
+  if (!list.length) return [];
+  return [
+    list.length > 1 ? "風格參考：綜合下面幾間餐廳的做菜思路，可以自由混搭。" : "風格參考：照下面這間餐廳的做菜思路。",
+    ...list.map((s) => `【${s.name}】\n${s.notes}`),
+    "只參考思路和手法，不要照抄他們的菜，菜要是主廚自己的。每道菜都要在 influences 標出用了哪間餐廳的哪個手法，from 填上面【】裡的餐廳名稱。"
+  ];
+}
+function kitchenContext(said = form.extra) {
   const k = kitchen;
   const names = saved.slice(0, 40).map((d) => d.name).join("、");
   return [
@@ -505,7 +573,8 @@ function kitchenContext() {
     k.components && `現有菜單已經有的醬汁和半成品（新菜盡量沿用，減少備料負擔）：${k.components}`,
     `現在是台灣的 ${new Date().getMonth() + 1} 月，優先用當季食材。`,
     "這是實際餐廳要用的菜：能提前做的放進前置作業，讓點單後出餐又快又穩；保存溫度和期限要符合食品安全。",
-    names && `主廚已經有這些菜，新菜不要跟它們太像：${names}`
+    names && `主廚已經有這些菜，新菜不要跟它們太像：${names}`,
+    ...styleContext(said)
   ].filter(Boolean);
 }
 function buildPrompt() {
@@ -795,6 +864,7 @@ function dishCard(d, ctx) {
     card.append(el("h2", {}, d.name));
     if (d.tagline) card.append(el("p", { class: "tagline" }, d.tagline));
     if (d.allergens.length) card.append(el("div", { class: "pills", "aria-label": "過敏原" }, d.allergens.map((a) => el("span", { class: "pill warn" }, a))));
+    if (d.influences.length) card.append(el("div", { class: "pills", "aria-label": "手法來源" }, d.influences.map((x) => el("span", { class: "pill src" }, el("b", {}, x.from.replace(/（.*?）/, "")), "　", x.what))));
 
     const tabs = [["recipe", "食譜"], ["ops", "備料出餐"], ["flavor", "風味賣點"]];
     if (!d.example) tabs.push(["ask", "問主廚"]);
@@ -839,7 +909,7 @@ function dishCard(d, ctx) {
         if (!req) { st.className = "status err"; st.textContent = "先寫你想怎麼改。"; return; }
         btn.disabled = true;
         const { photo, notes, rating, status, savedAt, id, _saved, example, tips, qa, ...base } = d;
-        const prompt = [...kitchenContext(), `下面是一道菜（JSON），請依照廚師的要求調整，給 ${n.value} 個不同的調整版本。`, `廚師的要求：${req}`, `原本的菜：${JSON.stringify(base)}`, FORMAT].join("\n");
+        const prompt = [...kitchenContext(form.extra + " " + req), `下面是一道菜（JSON），請依照廚師的要求調整，給 ${n.value} 個不同的調整版本。`, `廚師的要求：${req}`, `原本的菜：${JSON.stringify(base)}`, FORMAT].join("\n");
         const dishes = await ask(prompt, st, null);
         btn.disabled = false;
         if (dishes) { results = [...dishes, ...results.filter((x) => !x.example)].slice(0, 12); persistResults(); setView("make"); renderResults(); $("results").scrollIntoView({ behavior: "smooth", block: "start" }); toast("調整好的版本在最上面。"); }
