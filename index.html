@@ -129,6 +129,7 @@ button { font: inherit; cursor: pointer; }
 .stars button { border: 0; background: none; font-size: 1.6rem; line-height: 1; color: var(--line); padding: 2px; }
 .stars button.on { color: var(--gold); }
 .photo { max-width: 100%; max-height: 280px; object-fit: contain; border-radius: 10px; border: 1px solid var(--line); align-self: flex-start; }
+.explain { background: var(--chip); border-radius: 8px; padding: 10px 12px; font-size: .92rem; white-space: pre-wrap; margin-top: 6px; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .adjust { display: flex; flex-direction: column; gap: 8px; border-top: 1px dashed var(--line); padding-top: 12px; }
 .empty { text-align: center; color: var(--muted); padding: 32px 12px; border: 1px dashed var(--line); border-radius: 14px; }
@@ -369,6 +370,8 @@ function cleanDish(d) {
     rush: strs(d.rush), storage: strs(d.storage), trim: strs(d.trim), reuse: strs(d.reuse), plating: strs(d.plating),
     allergens: strs(d.allergens), veg: String(d.veg || ""), season: String(d.season || ""), menuCopy: String(d.menuCopy || ""), pitch: String(d.pitch || ""),
     pairing: strs(d.pairing), equipment: strs(d.equipment),
+    tips: (d.tips && typeof d.tips === "object" && !Array.isArray(d.tips)) ? d.tips : {},
+    qa: arr(d.qa).filter((x) => x && x.q && x.a).map((x) => ({ q: String(x.q), a: String(x.a) })),
     status: STATUS[d.status] ? d.status : "idea", rating: clamp(Number(d.rating) || 0, 0, 5), notes: String(d.notes || ""), photo: String(d.photo || ""), savedAt: Number(d.savedAt) || 0
   };
 }
@@ -564,7 +567,22 @@ async function callApi(prompt, file) {
     throw { code: "upstream_error" };
   }
   if (data.stop_reason === "max_tokens") throw { code: "too_long" };
-  return parseJSON((data.content || []).filter((c) => c.type === "text").map((c) => c.text).join(""));
+  return (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
+}
+const TEACH = "你是經驗豐富的主廚，正在教一位專業廚師同事。用繁體中文、口語、直接講重點。不要用 markdown 符號（不要 # 和 *），用短段落，需要條列時用「・」。";
+function dishBrief(d) {
+  return `菜名：${d.name}\n概念：${d.concept}\n材料：${d.ingredients.map((i) => i.item + " " + i.amount).join("、")}\n做法：\n${d.steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n廚房設備：${allEquip().join("、")}`;
+}
+async function askText(prompt, out) {
+  out.className = "explain"; out.textContent = "主廚說明中，稍等一下…";
+  try {
+    let text;
+    if (sample) text = (await sample(prompt, { cache: false, onText: (u) => { out.textContent = u.text; } })).text;
+    else if (settings.apiKey) text = await callApi(prompt, null);
+    else throw { code: "nokey" };
+    out.textContent = text;
+    return text;
+  } catch (e) { out.className = "status err"; out.textContent = copyFor(e && e.code); return null; }
 }
 function copyFor(code) {
   return ({
@@ -591,7 +609,7 @@ async function ask(prompt, statusEl, file) {
   try {
     let data;
     if (sample) data = await sample.json(prompt, file ? { cache: false, images: file } : { cache: false });
-    else if (settings.apiKey) data = await callApi(prompt, file);
+    else if (settings.apiKey) data = parseJSON(await callApi(prompt, file));
     else throw { code: "nokey" };
     const list = Array.isArray(data) ? data : (data && Array.isArray(data.dishes) ? data.dishes : [data]);
     const dishes = list.filter((d) => d && d.name).map(cleanDish);
@@ -653,6 +671,36 @@ function dishCard(d, ctx) {
   const sec = (title, node) => el("div", {}, el("h3", {}, title), node);
   const list = (a, ordered) => el(ordered ? "ol" : "ul", {}, a.map((s) => el("li", {}, s)));
 
+  function stepsNode() {
+    return el("ol", {}, d.steps.map((s, i) => {
+      const out = el("div", { class: "explain", hidden: true }, d.tips[s] || "");
+      const btn = el("button", { class: "ghost small", type: "button", style: "margin-left:6px" }, d.tips[s] ? "看細節" : "教我細節");
+      btn.addEventListener("click", async () => {
+        if (d.tips[s]) { out.hidden = !out.hidden; btn.textContent = out.hidden ? "看細節" : "收起"; return; }
+        btn.disabled = true; out.hidden = false;
+        const t = await askText(`${TEACH}\n${dishBrief(d)}\n\n請深入說明第 ${i + 1} 步：「${s}」\n依序講：\n1. 這一步在做什麼、為什麼要這樣做（背後的原理）\n2. 具體怎麼操作：火力、溫度、時間、用什麼器具\n3. 怎麼判斷做對了：看、聞、摸、聽的訊號\n4. 最常失敗的地方，失敗了怎麼救\n5. 沒做過這個技法的話，可以先怎麼練習\n控制在 350 字左右。`, out);
+        btn.disabled = false;
+        if (t) { d.tips[s] = t; quiet(); btn.textContent = "收起"; }
+      });
+      return el("li", {}, s, btn, out);
+    }));
+  }
+  function askPane() {
+    const box = el("textarea", { placeholder: "例如：焦化奶油要煮到什麼顏色？這個醬可以前一天做嗎？", "aria-label": "想問什麼" });
+    const out = el("div", { class: "explain", hidden: true });
+    const btn = el("button", { class: "ghost", type: "button", style: "align-self:flex-start" }, "問主廚");
+    btn.addEventListener("click", async () => {
+      const q = box.value.trim();
+      if (!q) { toast("先寫你想問什麼。"); return; }
+      btn.disabled = true; out.hidden = false;
+      const t = await askText(`${TEACH}\n${dishBrief(d)}\n\n廚師的問題：${q}\n請針對這道菜回答，講具體做法和背後的原理。`, out);
+      btn.disabled = false;
+      if (t) { d.qa = [{ q, a: t }, ...d.qa].slice(0, 20); changed(); }
+    });
+    return el("div", { class: "pane" },
+      el("p", { class: "hint" }, "這道菜任何地方不懂、想知道更深，都可以直接問。問過的會留在下面。"), box, btn, out,
+      d.qa.map((x) => el("div", {}, el("h3", {}, "問：" + x.q), el("div", { class: "explain" }, x.a))));
+  }
   function recipePane() {
     const minus = el("button", { type: "button", "aria-label": "少一份", onclick: () => setServ(d.servings - 1) }, "−");
     const plus = el("button", { type: "button", "aria-label": "多一份", onclick: () => setServ(d.servings + 1) }, "+");
@@ -665,7 +713,7 @@ function dishCard(d, ctx) {
     return el("div", { class: "pane" },
       el("div", {}, el("h3", {}, "材料　份量可以直接改"),
         el("div", { class: "serv" }, el("span", {}, "份數"), minus, el("span", { class: "num" }, d.servings), plus, el("span", { class: "hint" }, "按 ＋－ 自動換算")), ing),
-      d.steps.length && sec("做法", list(d.steps, true)),
+      d.steps.length && sec("做法　不懂的步驟按「教我細節」", stepsNode()),
       d.plating.length && sec("擺盤", list(d.plating)),
       d.equipment.length && el("div", { class: "pills" }, d.equipment.map((s) => el("span", { class: "pill" }, s)))
     );
@@ -749,11 +797,12 @@ function dishCard(d, ctx) {
     if (d.allergens.length) card.append(el("div", { class: "pills", "aria-label": "過敏原" }, d.allergens.map((a) => el("span", { class: "pill warn" }, a))));
 
     const tabs = [["recipe", "食譜"], ["ops", "備料出餐"], ["flavor", "風味賣點"]];
+    if (!d.example) tabs.push(["ask", "問主廚"]);
     if (form.costOn) tabs.push(["cost", "成本"]);
     if (ctx.saved) tabs.push(["log", "試做紀錄"]);
     if (!tabs.some((t) => t[0] === tab)) tab = "recipe";
     card.append(el("div", { class: "seg", role: "tablist" }, tabs.map(([k, v]) => el("button", { type: "button", role: "tab", "aria-selected": k === tab ? "true" : "false", onclick: () => { tab = k; draw(); } }, v))));
-    card.append({ recipe: recipePane, ops: opsPane, flavor: flavorPane, cost: costPane, log: logPane }[tab]());
+    card.append({ recipe: recipePane, ops: opsPane, flavor: flavorPane, cost: costPane, log: logPane, ask: askPane }[tab]());
 
     const actions = el("div", { class: "actions" });
     if (!d.example && !ctx.saved) {
@@ -789,7 +838,7 @@ function dishCard(d, ctx) {
         const req = box.value.trim();
         if (!req) { st.className = "status err"; st.textContent = "先寫你想怎麼改。"; return; }
         btn.disabled = true;
-        const { photo, notes, rating, status, savedAt, id, _saved, example, ...base } = d;
+        const { photo, notes, rating, status, savedAt, id, _saved, example, tips, qa, ...base } = d;
         const prompt = [...kitchenContext(), `下面是一道菜（JSON），請依照廚師的要求調整，給 ${n.value} 個不同的調整版本。`, `廚師的要求：${req}`, `原本的菜：${JSON.stringify(base)}`, FORMAT].join("\n");
         const dishes = await ask(prompt, st, null);
         btn.disabled = false;
