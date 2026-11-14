@@ -309,6 +309,7 @@ button { font: inherit; cursor: pointer; }
 
 <script>
 const $ = (id) => document.getElementById(id);
+const IN_CLAUDE = !!(window.claude && typeof window.claude.use === "function");
 const store = {
   get(k, d) { try { const v = localStorage.getItem("mk_" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem("mk_" + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
@@ -355,7 +356,7 @@ styles.forEach((s) => { if (!CATS.includes(s.cat)) s.cat = ["woowoo", "asako", "
 store.set("styles", styles); store.set("presetsSeen", presetsSeen);
 let saved = store.get("saved", []);
 let filter = "all";
-let sample = null, claudeChecked = !window.claude;
+let sample = null, claudeChecked = !IN_CLAUDE;
 let photoFile = null;
 
 const SAMPLE_DISH = {
@@ -470,7 +471,7 @@ function refreshMake() {
   $("ingHint").textContent = m === "ing" ? "用逗號分開" : "可留空";
   $("goBtn").textContent = m === "set" ? "幫我設計套餐" : m === "photo" ? "讀照片做食譜" : "幫我想新菜";
   $("kitchenSummary").textContent = "廚房：" + (allEquip().join("、") || "還沒設定設備");
-  $("needKey").hidden = !!window.claude || !claudeChecked || !!sample || !!settings.apiKey;
+  $("needKey").hidden = IN_CLAUDE || !claudeChecked || !!sample || !!settings.apiKey;
 }
 $("photo").addEventListener("change", () => {
   photoFile = $("photo").files[0] || null;
@@ -741,7 +742,7 @@ function copyFor(code) {
     busy: "Claude 現在比較忙，等一下再按一次。",
     network: "網路連不上，檢查一下網路再試。",
     too_long: "一次要的太多，寫到一半被截斷了。少要一道再試。",
-    nokey: window.claude ? "這裡目前沒辦法使用 Claude 想菜，請看最上面紅色提示怎麼處理。" : "還沒連上 AI。到「我的廚房」最下面貼上 API 金鑰。"
+    nokey: IN_CLAUDE ? "這裡目前沒辦法使用 Claude 想菜，請看最上面紅色提示怎麼處理。" : "還沒連上 AI。到「我的廚房」最下面貼上 API 金鑰。"
   })[code] || "連線出了點問題，再按一次試試。";
 }
 async function ask(prompt, statusEl, file) {
@@ -1051,7 +1052,7 @@ setView("make");
 renderResults();
 
 (async () => {
-  if (window.claude) {
+  if (IN_CLAUDE) {
     try {
       sample = await claude.use("sample");
       claudeChecked = true;
@@ -1066,7 +1067,7 @@ renderResults();
           persistSaved(); store.set("migrated", true);
         }
       }
-    } catch (e) { claudeChecked = true; refreshMake(); }
+    } catch (e) { claudeChecked = true; refreshMake(); if (!sample) diagnose(); }
   }
   if (document.querySelector('link[rel="manifest"]') && "serviceWorker" in navigator) { try { navigator.serviceWorker.register("sw.js"); } catch (e) {} }
 })();
