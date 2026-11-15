@@ -1328,21 +1328,41 @@ function dishCard(d, ctx) {
     card.append(actions);
 
     if (!d.example) {
-      const box = el("input", { type: "text", placeholder: "想怎麼改？例如：干貝換鮮蝦、更清爽", "aria-label": "想怎麼改" });
+      const box = el("textarea", { placeholder: "問問題：為什麼要加白蘭地？可以不加嗎？\n或直接說怎麼改：蝦頭換成蟹殼、太鹹了", "aria-label": "問題或想怎麼改", style: "min-height:88px" });
       const st = el("p", { class: "status" });
+      const out = el("div", { class: "explain", hidden: true });
+      const follow = el("div", { hidden: true });
       const n = el("select", { "aria-label": "要幾個版本" }, el("option", { value: "1" }, "改 1 版"), el("option", { value: "2" }, "改 2 版"), el("option", { value: "3" }, "改 3 版"));
-      const btn = el("button", { class: "ghost", type: "button" }, "調整這道菜");
-      btn.addEventListener("click", async () => {
-        const req = box.value.trim();
-        if (!req) { st.className = "status err"; st.textContent = "先寫你想怎麼改。"; return; }
-        btn.disabled = true;
+      const askBtn = el("button", { class: "ghost", type: "button" }, "問主廚");
+      const fixBtn = el("button", { class: "ghost", type: "button" }, "照這樣改配方");
+      const lock = (v) => { askBtn.disabled = fixBtn.disabled = v; };
+      const adjust = async (req) => {
+        lock(true);
         const { photo, notes, rating, status, savedAt, id, _saved, example, tips, qa, ...base } = d;
-        const prompt = [...kitchenContext(form.extra + " " + req), `下面是一道菜（JSON），請依照廚師的要求調整，給 ${n.value} 個不同的調整版本。`, `廚師的要求：${req}`, `原本的菜：${JSON.stringify(base)}`, FORMAT].join("\n");
+        const prompt = [...kitchenContext(form.extra + " " + req), `下面是一個配方（JSON），請依照廚師的要求調整，給 ${n.value} 個不同的調整版本。沒有要求改的部分保持原樣。`, `廚師的要求：${req}`, `原本的配方：${JSON.stringify(base)}`, FORMAT].join("\n");
         const dishes = await ask(prompt, st, null, Number(n.value), d.kind === "component" ? 1500 : 2300);
-        btn.disabled = false;
-        if (dishes) { setView("make"); addResults(dishes); toast("調整好的版本在最上面。"); }
+        lock(false);
+        if (dishes) { if (d.own) dishes.forEach((x) => { x.own = true; }); setView("make"); addResults(dishes); toast("改好的版本在最上面，原本的還留著。"); }
+      };
+      fixBtn.addEventListener("click", () => {
+        const req = box.value.trim();
+        if (!req) { st.className = "status err"; st.textContent = "先在上面寫你想怎麼改。"; return; }
+        adjust(req);
       });
-      card.append(el("div", { class: "adjust" }, el("span", { class: "label" }, "調整這道菜"), box, el("div", { class: "row" }, n, btn), st));
+      askBtn.addEventListener("click", async () => {
+        const q = box.value.trim();
+        if (!q) { st.className = "status err"; st.textContent = "先在上面寫你想問什麼。"; return; }
+        st.textContent = ""; lock(true); out.hidden = false; follow.hidden = true;
+        const t = await askText(`${TEACH}\n${dishBrief(d)}\n\n廚師的問題：${q}\n請針對這個配方回答，講具體做法和背後的原理。如果這代表配方可以改得更好，最後另起一行寫「建議的改法：」加一句話。`, out);
+        lock(false);
+        if (!t) return;
+        d.qa = [{ q, a: t }, ...d.qa].slice(0, 20); quiet();
+        follow.replaceChildren(el("button", { class: "ghost", type: "button", onclick: () => adjust(`根據這段問答來調整配方。廚師問：${q}\n主廚的回答：${t}`) }, "照主廚的回答改配方"));
+        follow.hidden = false;
+      });
+      card.append(el("div", { class: "adjust" }, el("span", { class: "label" }, "有問題，或想改這個配方？"),
+        el("p", { class: "hint" }, "「問主廚」只回答，不會動配方。「照這樣改配方」會做出新版本，原本的會留著。"),
+        box, el("div", { class: "row" }, askBtn, fixBtn, n), st, out, follow));
     }
   }
   draw();
