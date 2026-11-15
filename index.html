@@ -139,6 +139,33 @@ button { font: inherit; cursor: pointer; }
 .empty { text-align: center; color: var(--muted); padding: 32px 12px; border: 1px dashed var(--line); border-radius: 14px; }
 .confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .9rem; }
 
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mode { text-align: left; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mode b { font-family: var(--font-display); font-size: 1.05rem; }
+.mode span { font-size: .78rem; color: var(--muted); line-height: 1.4; }
+.mode[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.more { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; }
+.more summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0; font-weight: 700; cursor: pointer; list-style: none; }
+.more summary::-webkit-details-marker { display: none; }
+.more summary .hint { flex: 1; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.more summary::after { content: "▾"; color: var(--muted); }
+.more[open] summary::after { content: "▴"; }
+.more > .view { padding-bottom: 14px; }
+.progress { position: fixed; z-index: 25; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(70px + env(safe-area-inset-bottom, 0px)); max-width: 620px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; box-shadow: 0 8px 24px rgb(0 0 0 / .18); display: flex; flex-direction: column; gap: 8px; }
+.progress .ptop, .progress .pbot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.progress .pbot .hint { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar { height: 8px; background: var(--chip); border-radius: 99px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .4s ease; }
+.scalebox { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.scalebox .serv { margin: 0; }
+.mulrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mulrow input { padding: 6px 8px; }
+.ing.ed { grid-template-columns: minmax(0, 1fr) auto 30px; }
+.ing input.nm { width: 100%; text-align: left; font-family: var(--font-body); font-size: 1rem; border-color: transparent; background: transparent; padding-left: 0; }
+.ing input.nm:focus { border-color: var(--line); background: var(--surface); padding-left: 8px; }
+.ing .x { width: 30px; height: 30px; border: 0; background: none; color: var(--muted); font-size: 1.1rem; border-radius: 50%; }
+.dish .labelrow h3 { margin: 0; }
+
 .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center; background: var(--surface); border-top: 1px solid var(--line);
   padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
 .nav button { flex: 1; max-width: 200px; border: 0; background: none; color: var(--muted); padding: 8px 4px 6px; font-size: .9rem; border-top: 3px solid transparent; margin-top: -7px; }
@@ -160,72 +187,100 @@ button { font: inherit; cursor: pointer; }
 <div class="wrap">
   <header class="top">
     <h1>主廚靈感廚房</h1>
-    <p>無國界新菜，從靈感、備料到出餐一次想好。</p>
+    <p>新點子或自己的配方，都能換算份量、排備料、算成本。</p>
   </header>
 
   <section class="view" id="view-make">
     <div class="banner" id="needKey" hidden><span>還沒連上 AI，要先貼上金鑰才能想菜。</span><button class="ghost small" type="button" data-go="kitchen">去設定</button></div>
     <div class="banner" id="needClaude" hidden><span id="needClaudeText"></span><button class="ghost small" type="button" id="permBtn" hidden></button></div>
-    <div class="chips" id="modeChips" role="group" aria-label="想菜方式">
-      <button class="chip" type="button" data-mode="ing">用食材想</button>
-      <button class="chip" type="button" data-mode="theme">給主題</button>
-      <button class="chip" type="button" data-mode="photo">拍菜單</button>
-      <button class="chip" type="button" data-mode="set">整套套餐</button>
+    <div class="modes" id="modeChips" role="group" aria-label="今天要做什麼">
+      <button class="mode" type="button" data-mode="idea"><b>想新點子</b><span>給食材或想法，幫你設計</span></button>
+      <button class="mode" type="button" data-mode="own"><b>我有配方</b><span>換算倍數、補備料、算成本</span></button>
+      <button class="mode" type="button" data-mode="photo"><b>拍照讀取</b><span>菜單、手寫配方、成品照</span></button>
+      <button class="mode" type="button" data-mode="set"><b>整套套餐</b><span>前菜到甜點一次排好</span></button>
     </div>
-    <div class="field" id="themeField" hidden>
-      <label for="theme">主題 <span class="hint">例如：秋季海鮮、母親節、台灣在地食材</span></label>
-      <input type="text" id="theme" placeholder="例如：秋季海鮮前菜">
+    <div class="field" id="kindField">
+      <span class="label">要做的是</span>
+      <div class="chips" id="kindChips" role="group" aria-label="要做的是">
+        <button class="chip" type="button" data-kind="dish">一道菜</button>
+        <button class="chip" type="button" data-kind="sauce">醬汁</button>
+        <button class="chip" type="button" data-kind="stock">高湯</button>
+        <button class="chip" type="button" data-kind="comp">半成品・配料</button>
+        <button class="chip" type="button" data-kind="dessert">甜點</button>
+      </div>
+    </div>
+    <div class="field" id="goalField">
+      <label for="goal"><span id="goalLabel">想做什麼</span> <span class="hint">寫得越明確，做出來越準。可留空</span></label>
+      <input type="text" id="goal">
     </div>
     <div class="field" id="photoField" hidden>
-      <label for="photo">拍菜單或菜名 <span class="hint">菜單、手寫菜名，或一道菜的照片</span></label>
-      <input type="file" id="photo" accept="image/*">
+      <span class="label">照片是</span>
+      <div class="chips" id="pkChips" role="group" aria-label="照片是">
+        <button class="chip" type="button" data-pk="menu">菜單、菜名或成品</button>
+        <button class="chip" type="button" data-pk="recipe">我的配方（手寫也可以）</button>
+      </div>
+      <input type="file" id="photo" accept="image/*" aria-label="選照片">
       <img id="photoPreview" class="photo" alt="你選的照片" hidden>
     </div>
-    <div class="field">
-      <div class="labelrow"><label for="ingredients">今天的食材 <span class="hint" id="ingHint"></span></label><button class="ghost small" type="button" id="micBtn" hidden>用講的</button></div>
-      <textarea id="ingredients" placeholder="例如：鴨胸、南瓜、紅蔥頭"></textarea>
+    <div class="field" id="ownField" hidden>
+      <label for="ownText">貼上或打你的配方 <span class="hint">一行一樣材料，做法也可以一起貼</span></label>
+      <textarea id="ownText" style="min-height:170px" placeholder="蝦醬&#10;蝦頭 3 公斤&#10;洋蔥 500 g&#10;番茄糊 120 g&#10;白蘭地 100 ml&#10;蝦頭烤上色，加蔬菜炒香後嗆酒"></textarea>
+      <button class="ghost" type="button" id="ownQuick" style="align-self:flex-start">直接建立，馬上換算（不用 AI）</button>
+      <p class="hint">「直接建立」不花額度，建好就能改倍數。下面的紅色按鈕會請 AI 照你的配方整理，並補上備料、保存和成本，不會改你的配方。</p>
     </div>
-    <div class="field">
-      <span class="label">大膽程度</span>
-      <div class="chips" id="boldChips" role="group" aria-label="大膽程度">
-        <button class="chip" type="button" data-bold="safe">保守</button>
-        <button class="chip" type="button" data-bold="mid">平衡</button>
-        <button class="chip" type="button" data-bold="wild">實驗</button>
+    <div class="field" id="ingField">
+      <div class="labelrow"><label for="ingredients">手上的食材 <span class="hint">可留空。寫了份量就照那個量配</span></label><button class="ghost small" type="button" id="micBtn" hidden>用講的</button></div>
+      <textarea id="ingredients" placeholder="例如：蝦頭 3 公斤、洋蔥、番茄"></textarea>
+    </div>
+    <details class="more" id="moreBox">
+      <summary><span>更多設定</span><span class="hint" id="moreSummary"></span></summary>
+      <div class="view">
+        <div class="view" id="creativeOpts">
+          <div class="field">
+            <span class="label">大膽程度</span>
+            <div class="chips" id="boldChips" role="group" aria-label="大膽程度">
+              <button class="chip" type="button" data-bold="safe">保守</button>
+              <button class="chip" type="button" data-bold="mid">平衡</button>
+              <button class="chip" type="button" data-bold="wild">實驗</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="styleRef">風格參考 <span class="hint">也可以直接在想法裡寫「參考迴回」「全部甜點」</span></label>
+            <select id="styleRef"></select>
+          </div>
+          <div class="row">
+            <div class="field" id="versionsField">
+              <label for="versions">一次給幾個版本</label>
+              <select id="versions"><option value="1">1 個</option><option value="2">2 個</option><option value="3">3 個</option></select>
+            </div>
+            <div class="field" id="coursesField" hidden>
+              <label for="courses">套餐幾道</label>
+              <select id="courses"><option value="3">3 道</option><option value="4">4 道</option><option value="5">5 道</option></select>
+            </div>
+            <div class="field" id="servingsField">
+              <label for="servings">每道份數</label>
+              <input type="number" id="servings" min="1" max="50" inputmode="numeric">
+            </div>
+          </div>
+          <div class="field">
+            <label for="extra">其他要求 <span class="hint">例如：不要辣、3 分鐘內出餐</span></label>
+            <input type="text" id="extra">
+          </div>
+        </div>
+        <label class="switch" for="costOn">
+          <span><b>算成本跟建議售價</b><br><span class="hint">先用行情估，可以改成你的進貨價</span></span>
+          <input type="checkbox" id="costOn">
+        </label>
+        <div class="field" id="pctRow" hidden>
+          <label for="pct">目標食材成本率（%）</label>
+          <input type="number" id="pct" min="10" max="70" inputmode="numeric">
+        </div>
+        <div class="kitchenline"><span id="kitchenSummary"></span><button class="ghost small" type="button" data-go="kitchen">改廚房設定</button></div>
       </div>
-    </div>
-    <div class="field">
-      <label for="styleRef">風格參考 <span class="hint">也可以在「其他要求」直接寫「參考迴回」「全部甜點」或「全部風格」</span></label>
-      <select id="styleRef"></select>
-    </div>
-    <div class="row">
-      <div class="field" id="versionsField">
-        <label for="versions">一次給幾道</label>
-        <select id="versions"><option value="1">1 道</option><option value="2">2 道</option><option value="3">3 道</option></select>
-      </div>
-      <div class="field" id="coursesField" hidden>
-        <label for="courses">套餐幾道</label>
-        <select id="courses"><option value="3">3 道</option><option value="4">4 道</option><option value="5">5 道</option></select>
-      </div>
-      <div class="field">
-        <label for="servings">每道份數</label>
-        <input type="number" id="servings" min="1" max="50" inputmode="numeric">
-      </div>
-    </div>
-    <div class="field">
-      <label for="extra">其他要求 <span class="hint">可留空，例如：不要辣、3 分鐘內出餐</span></label>
-      <input type="text" id="extra">
-    </div>
-    <label class="switch" for="costOn">
-      <span><b>算成本跟建議售價</b><br><span class="hint">先用行情估，可以改成你的進貨價</span></span>
-      <input type="checkbox" id="costOn">
-    </label>
-    <div class="field" id="pctRow" hidden>
-      <label for="pct">目標食材成本率（%）</label>
-      <input type="number" id="pct" min="10" max="70" inputmode="numeric">
-    </div>
-    <div class="kitchenline"><span id="kitchenSummary"></span><button class="ghost small" type="button" data-go="kitchen">改廚房設定</button></div>
-    <button class="go" id="goBtn" type="button">幫我想新菜</button>
+    </details>
+    <button class="go" id="goBtn" type="button">幫我想新點子</button>
     <p class="status" id="status" role="status"></p>
+    <div class="labelrow" id="resultsHead" hidden><span class="label">想出來的結果 <span class="hint">新的在最上面</span></span><button class="ghost small" type="button" id="clearResults">清空</button></div>
     <div class="view" id="results"></div>
   </section>
 
@@ -305,6 +360,11 @@ button { font: inherit; cursor: pointer; }
   <div class="big" id="cookText"></div>
   <div class="btns"><button type="button" id="cookPrev">上一步</button><button type="button" class="next" id="cookNext">下一步</button></div>
 </div>
+<div class="progress" id="progress" hidden>
+  <div class="ptop"><b id="pStage">主廚正在構思</b><span class="num" id="pPct">0%</span></div>
+  <div class="bar" id="pBarWrap" role="progressbar" aria-label="進度" aria-valuemin="0" aria-valuemax="100"><i id="pBar"></i></div>
+  <div class="pbot"><span class="hint" id="pDetail"></span><span class="hint num" id="pTime" style="flex:none"></span><button class="ghost small" type="button" id="pCancel">取消</button></div>
+</div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -323,11 +383,14 @@ const BOLD = {
 };
 
 let kitchen = Object.assign({ equip: ["瓦斯爐","烤箱","舒肥機","果汁機","真空機"], equipMore: "", seasonings: "", components: "", position: "", price: "", signature: "", love: "", avoid: "" }, store.get("kitchen", {}));
-let form = Object.assign({ mode: "ing", theme: "", ingredients: "", bold: "mid", versions: "2", courses: "3", servings: "1", extra: "", costOn: false, pct: "30", styleRef: "none" }, store.get("form", {}));
+let form = Object.assign({ mode: "idea", kind: "dish", goal: "", photoKind: "menu", ownText: "", linkScale: true, theme: "", ingredients: "", bold: "mid", versions: "2", courses: "3", servings: "1", extra: "", costOn: false, pct: "30", styleRef: "none" }, store.get("form", {}));
+if (form.mode === "ing" || form.mode === "theme") form.mode = "idea";
+if (form.theme && !form.goal) form.goal = form.theme;
+form.theme = "";
 let settings = Object.assign({ apiKey: "", model: "claude-sonnet-5-5" }, store.get("settings", {}));
 if (kitchen.seasonings === "味噌、柚子胡椒、奶油、白酒醋、海鹽") kitchen.seasonings = "";
 if (form.ingredients === "干貝、南瓜、柚子、紅蔥頭、鴨胸") form.ingredients = "";
-if (form.theme === "秋季海鮮前菜") form.theme = "";
+if (form.goal === "秋季海鮮前菜") form.goal = "";
 let recent = store.get("recent", []);
 const HUIHUI = {
   id: "huihui", cat: "料理", name: "迴回 Huí Huí（瑞芳水湳洞）",
@@ -406,15 +469,42 @@ const strs = (v) => arr(v).map((x) => typeof x === "string" ? x : (x && (x.step 
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const split = (s) => String(s || "").split(/[,，、\n]/).map((x) => x.trim()).filter(Boolean);
 const numOf = (s) => { const m = String(s).match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : null; };
-const fmtNum = (x) => x >= 10 ? Math.round(x) : Math.round(x * 10) / 10;
-const scaleAmt = (s, r) => String(s).replace(/\d+(?:\.\d+)?/, (m) => String(fmtNum(parseFloat(m) * r)));
+const trimNum = (x, dp) => String(parseFloat(x.toFixed(dp)));
+const fmtNum = (x) => x >= 100 ? String(Math.round(x)) : x >= 10 ? trimNum(x, 1) : trimNum(x, 2);
+const round1 = (x) => Math.round(x * 10) / 10;
+const UNITS = [[/^(kg|公斤)$/i, "g", 1000], [/^(g|gm|克|公克)$/i, "g", 1], [/^(l|公升|升)$/i, "ml", 1000], [/^(ml|cc|毫升)$/i, "ml", 1]];
+const AMT_RE = /(\d+(?:\.\d+)?)(\s*)([a-zA-Z一-鿿]*)/;
+function parseAmt(s) {
+  const m = String(s).match(AMT_RE); if (!m) return null;
+  const num = parseFloat(m[1]), unit = m[3] || "";
+  for (const [re, dim, f] of UNITS) if (re.test(unit)) return { num, unit, dim, base: num * f };
+  return { num, unit, dim: "", base: num };
+}
+/* scale the first number in an amount; grams and millilitres switch to kg / L when they get big */
+function scaleAmt(s, r) {
+  const a = parseAmt(s); if (!a) return String(s);
+  return String(s).replace(AMT_RE, (all, n, sp) => {
+    if (!a.dim) return fmtNum(a.num * r) + sp + a.unit;
+    const v = a.base * r, zh = /[一-鿿]/.test(a.unit);
+    const big = a.dim === "g" ? (zh ? "公斤" : "kg") : (zh ? "公升" : "L"), small = a.dim === "g" ? (zh ? "公克" : "g") : (zh ? "毫升" : "ml");
+    return v >= 1000 ? trimNum(v / 1000, 2) + " " + big : fmtNum(v) + " " + small;
+  });
+}
+/* how many times bigger the new amount is; null when the two can't be compared */
+function ratioOf(oldS, newS) {
+  const a = parseAmt(oldS), b = parseAmt(newS);
+  if (!a || !b || !(a.num > 0) || !(b.num > 0)) return null;
+  if (a.dim && a.dim === b.dim) return b.base / a.base;
+  if (!b.unit || b.unit.toLowerCase() === a.unit.toLowerCase()) return b.num / a.num;
+  return null;
+}
 let toastTimer;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600); }
 
 function cleanDish(d) {
   return {
     id: d.id || "", example: !!d.example, course: String(d.course || ""), name: String(d.name || ""), tagline: String(d.tagline || ""), concept: String(d.concept || ""),
-    logic: strs(d.logic), servings: Math.max(1, Math.round(Number(d.servings) || 1)),
+    logic: strs(d.logic), servings: Math.max(0.1, round1(Number(d.servings) || 1)), kind: d.kind === "component" ? "component" : "dish", output: String(d.output || ""), uses: strs(d.uses), own: !!d.own,
     ingredients: arr(d.ingredients).map((i) => ({ item: String(i.item || ""), amount: String(i.amount || ""), yield: clamp(Math.round(Number(i.yield) || 100), 10, 100), cost: Math.max(0, Math.round(Number(i.cost) || 0)) })).filter((i) => i.item),
     steps: strs(d.steps), prep: strs(d.prep),
     service: arr(d.service).map((s) => typeof s === "string" ? { step: s, station: "", min: 0 } : { step: String((s && s.step) || ""), station: String((s && s.station) || ""), min: Math.max(0, Number(s && s.min) || 0) }).filter((s) => s.step),
@@ -445,38 +535,89 @@ function setView(v) {
 document.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.go)));
 
 /* ---------- make form ---------- */
+const KIND = {
+  dish: { label: "一道菜", ph: "例如：蝦頭做成濃湯前菜、秋季海鮮主菜" },
+  sauce: { label: "醬汁", ph: "例如：蝦頭做成蝦醬、配白肉魚的奶油醬" },
+  stock: { label: "高湯", ph: "例如：蝦高湯、烤雞骨白湯" },
+  comp: { label: "半成品・配料", ph: "例如：蝦油、油封蒜、醃漬小黃瓜" },
+  dessert: { label: "甜點", ph: "例如：草莓開心果的盤式甜點" }
+};
+if (!KIND[form.kind]) form.kind = "dish";
+const isComp = () => ["sauce", "stock", "comp"].includes(form.kind);
+const recipeShot = () => form.mode === "photo" && form.photoKind === "recipe";
 function bindForm(id, key) {
   const n = $(id);
   if (n.type === "checkbox") n.checked = !!form[key]; else n.value = form[key];
   n.addEventListener("change", () => { form[key] = n.type === "checkbox" ? n.checked : n.value; store.set("form", form); refreshMake(); if (key === "costOn" || key === "pct") { renderResults(); } });
 }
-["theme", "ingredients", "versions", "courses", "servings", "extra", "costOn", "pct"].forEach((k) => bindForm(k, k));
+["goal", "ingredients", "ownText", "versions", "courses", "servings", "extra", "costOn", "pct"].forEach((k) => bindForm(k, k));
+$("goal").addEventListener("input", () => { form.goal = $("goal").value; refreshMake(); });
 function chipGroup(boxId, attr, get, set) {
   const paint = () => $(boxId).querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset[attr] === get() ? "true" : "false"));
   $(boxId).querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { set(b.dataset[attr]); paint(); }));
   paint();
 }
-chipGroup("modeChips", "mode", () => form.mode, (v) => { form.mode = v; store.set("form", form); refreshMake(); });
-chipGroup("boldChips", "bold", () => form.bold, (v) => { form.bold = v; store.set("form", form); });
+const setForm = (k) => (v) => { form[k] = v; store.set("form", form); refreshMake(); };
+chipGroup("modeChips", "mode", () => form.mode, setForm("mode"));
+chipGroup("kindChips", "kind", () => form.kind, setForm("kind"));
+chipGroup("pkChips", "pk", () => form.photoKind, setForm("photoKind"));
+chipGroup("boldChips", "bold", () => form.bold, setForm("bold"));
 chipGroup("filterChips", "filter", () => filter, (v) => { filter = v; renderSaved(); });
 
 function allEquip() { return [...kitchen.equip, ...split(kitchen.equipMore)]; }
 function refreshMake() {
-  const m = form.mode;
-  $("themeField").hidden = m !== "theme" && m !== "set";
+  const m = form.mode, faithful = m === "own" || recipeShot();
+  $("kindField").hidden = m !== "idea";
+  $("goalField").hidden = m !== "idea" && m !== "set";
+  $("goalLabel").textContent = m === "set" ? "套餐主題" : "想做什麼";
+  $("goal").placeholder = m === "set" ? "例如：秋季海鮮、母親節" : KIND[form.kind].ph;
   $("photoField").hidden = m !== "photo";
+  $("ownField").hidden = m !== "own";
+  $("ingField").hidden = faithful;
+  $("creativeOpts").hidden = faithful;
   $("versionsField").hidden = m === "set";
   $("coursesField").hidden = m !== "set";
+  $("servingsField").hidden = m === "idea" && isComp();
   $("pctRow").hidden = !form.costOn;
-  $("ingHint").textContent = m === "ing" ? "用逗號分開" : "可留空";
-  $("goBtn").textContent = m === "set" ? "幫我設計套餐" : m === "photo" ? "讀照片做食譜" : "幫我想新菜";
+  $("goBtn").textContent = m === "own" ? "請 AI 整理並補上備料成本" : m === "set" ? "幫我設計套餐" : m === "photo" ? (recipeShot() ? "讀出我的配方" : "讀照片做食譜") : form.goal.trim() ? "幫我做這個" : "幫我想新點子";
   $("kitchenSummary").textContent = "廚房：" + (allEquip().join("、") || "還沒設定設備");
+  const sr = String(form.styleRef), st = sr === "none" ? "" : sr === "all" ? "全部風格" : sr.startsWith("cat:") ? "全部" + sr.slice(4) : ((styles.find((x) => x.id === sr) || {}).name || "").replace(/（.*?）/, "");
+  $("moreSummary").textContent = (faithful ? [form.costOn && "算成本"] : [{ safe: "保守", mid: "平衡", wild: "實驗" }[form.bold], m === "set" ? form.courses + " 道套餐" : form.versions + " 個版本", st && "參考" + st, form.costOn && "算成本"]).filter(Boolean).join("・");
   $("needKey").hidden = IN_CLAUDE || !claudeChecked || !!sample || !!settings.apiKey;
 }
 $("photo").addEventListener("change", () => {
   photoFile = $("photo").files[0] || null;
   const img = $("photoPreview");
   if (photoFile) { img.src = URL.createObjectURL(photoFile); img.hidden = false; } else img.hidden = true;
+});
+
+/* turn pasted text into a recipe without AI: "蝦頭 3 公斤" lines become ingredients, the rest become steps */
+const ING_RE = new RegExp("^(?:[・\\-*•]\\s*|\\d+[.、)]\\s+)?(.{1,18}?)\\s*[:：]?\\s*(\\d+(?:\\.\\d+)?\\s*(?:kg|g|公克|公斤|克|台斤|斤|兩|ml|cc|l|公升|毫升|升|顆|個|片|支|根|條|大匙|小匙|茶匙|湯匙|匙|杯|瓣|包|罐|瓶|隻|尾|把|束|粒|張|塊|滴|撮|份|%)?)$", "i");
+function parseOwn(text) {
+  const ings = [], steps = []; let name = "";
+  const asIng = (l) => { const m = l.match(ING_RE); return m && !/[，。；]/.test(m[1]) ? { item: m[1].trim(), amount: m[2].trim(), yield: 100, cost: 0 } : null; };
+  String(text).split(/\n/).map((l) => l.trim()).filter(Boolean).forEach((l, idx) => {
+    const parts = l.split(/[、，,]/).map((x) => x.trim()).filter(Boolean), each = parts.map(asIng);
+    if (parts.length > 1 && each.every(Boolean)) ings.push(...each);
+    else if (asIng(l)) ings.push(asIng(l));
+    else if (idx === 0 && l.length <= 24) name = l.replace(/[:：]$/, "");
+    else steps.push(l.replace(/^\d+[.、)]\s*/, ""));
+  });
+  return ings.length ? cleanDish({ name: name || "我的配方", own: true, servings: 1, ingredients: ings, steps }) : null;
+}
+function addResults(dishes) {
+  results = [...dishes, ...results.filter((x) => !x.example)].slice(0, 12);
+  persistResults(); renderResults(); $("resultsHead").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("ownQuick").addEventListener("click", () => {
+  const d = parseOwn($("ownText").value);
+  if (!d) { $("status").className = "status err"; $("status").textContent = "看不出材料。請一行寫一樣，後面加份量，例如「蝦頭 3 公斤」。"; return; }
+  $("status").textContent = ""; addResults([d]); toast("建好了。改任何一項的量，其他會跟著換算。");
+});
+let clearArmed = 0;
+$("clearResults").addEventListener("click", () => {
+  if (Date.now() - clearArmed > 4000) { clearArmed = Date.now(); $("clearResults").textContent = "再按一次確定清空"; setTimeout(() => { $("clearResults").textContent = "清空"; }, 4000); return; }
+  clearArmed = 0; results = [cleanDish(SAMPLE_DISH)]; persistResults(); renderResults(); $("clearResults").textContent = "清空"; toast("已清空。存起來的菜不受影響。");
 });
 
 /* voice input */
@@ -547,7 +688,7 @@ function renderStyles() {
   if (order.some((s, i) => s !== styles[i])) { styles = order; store.set("styles", styles); renderStyles(); }
 }
 $("addStyle").addEventListener("click", () => { styles.push({ id: "s" + Date.now().toString(36), cat: "料理", name: "", notes: "" }); saveStyles(); renderStyles(); });
-$("styleRef").addEventListener("change", () => { form.styleRef = $("styleRef").value; store.set("form", form); });
+$("styleRef").addEventListener("change", () => { form.styleRef = $("styleRef").value; store.set("form", form); refreshMake(); });
 $("shotGo").addEventListener("click", async () => {
   const st = $("shotStatus"), files = [...$("shots").files].slice(0, 10), hint = $("shotName").value.trim();
   if (!files.length) { st.className = "status err"; st.textContent = "先選幾張截圖。"; return; }
@@ -605,7 +746,11 @@ const FORMAT = `只回一個 JSON 陣列，不要其他文字、不要 markdown�
 "pitch":"外場介紹這道菜的口語說法，兩三句",
 "pairing":["建議搭配的酒","建議搭配的無酒精飲品"],
 "equipment":["用到的設備"],
+"kind":"dish 或 component（醬汁、高湯、半成品填 component）",
+"output":"component 才填：這一批做出來的成品量，例如 約 1.2 公升；dish 給空字串",
+"uses":["component 才填：可以用在哪些菜上，一句一個；dish 給空陣列"],
 "influences":[{"from":"參考的餐廳名稱","what":"這道菜哪個部分用了他們的什麼手法，一句"}]（沒有風格參考就空陣列）}
+做法（steps）裡不要重複寫材料的克數，用材料名稱就好，這樣之後放大份量才不會出錯；溫度和時間照寫。
 每一項都要簡短實用。全部用繁體中文，價格用台灣市場行情。`;
 
 function styleKeys(s) { return String(s.name || "").split(/[\s（）()、,，]+/).filter((t) => t.length >= 2); }
@@ -650,15 +795,37 @@ function kitchenContext(said = form.extra) {
     ...styleContext(said)
   ].filter(Boolean);
 }
+const COMP_RULE = "這是廚房裡的半成品配方，不是一道完整的菜：kind 填 component；配方以一批的量來寫，output 填這一批做出來的成品量（例如 約 1.2 公升），servings 填 1；uses 寫 3 個它可以用在哪些菜上；plating、service、rush、pairing 給空陣列，menuCopy、pitch、veg 給空字串；prep 寫可以提前做的部分，storage 要寫清楚怎麼保存和期限。";
+const AMOUNT_RULE = "如果食材後面寫了份量（例如 蝦頭 3 公斤），配方就以那個份量為準，其他材料照比例配，不要改掉那個量，servings 或 output 也照這個量去算。";
+function ownPrompt(text) {
+  return [
+    "你是專業主廚的助理。" + (text ? "下面是主廚自己的配方。" : "附上的照片是主廚自己的配方（可能是手寫），請先把內容完整讀出來。"),
+    "請忠實整理成指定的格式：材料名稱、份量、做法都照原本的，不要更改、不要增減材料、不要調整比例、不要換算份量、不要重新設計。",
+    "原文沒有寫的部分可以依專業補上：前置作業、保存方式、過敏原、淨料率、成本估價、邊角料利用。concept 和 logic 用一兩句說明這個配方的重點就好。看不出來的欄位留空，不要編造做法。",
+    "名稱用原文的，原文沒有就取一個貼切的。如果這是醬汁、高湯或半成品：" + COMP_RULE,
+    `廚房設備：${allEquip().join("、") || "瓦斯爐"}`,
+    "只回 1 個元素的陣列。",
+    text ? "主廚的配方原文：\n" + text : "",
+    FORMAT
+  ].filter(Boolean).join("\n");
+}
 function buildPrompt() {
-  const m = form.mode, n = form.versions, ing = form.ingredients.trim();
-  const lines = kitchenContext();
+  const m = form.mode, ing = form.ingredients.trim(), goal = form.goal.trim(), n = Number(form.versions) || 1;
+  if (m === "own") return ownPrompt(form.ownText.trim());
+  if (recipeShot()) return ownPrompt("");
+  const lines = kitchenContext(form.extra + " " + goal);
   lines.push("大膽程度：" + BOLD[form.bold]);
-  if (m === "ing") lines.push(`今天的食材：${ing || "未提供，請自行挑選當季食材"}`, "以這些食材為主角，可以只用一部分，也可以少量補充常見配料。", `請設計 ${n} 道風格明顯不同的菜。`);
-  if (m === "theme") lines.push(`主題：${form.theme.trim() || "自由發揮"}`, ing && `手上有的食材（優先使用）：${ing}`, `請設計 ${n} 道風格明顯不同的菜。`);
-  if (m === "set") lines.push(`請設計一套 ${form.courses} 道的套餐。`, `主題：${form.theme.trim() || "自由發揮"}`, ing && `手上有的食材（優先使用）：${ing}`, "套餐要有輕重節奏，從清爽到濃郁再收尾；每道的主食材、烹調手法和主要味型不要重複；course 要填這道在套餐裡的位置，並照上菜順序排列。");
-  if (m === "photo") lines.push(`附上的照片是菜單、菜名或一道菜。先讀出照片裡的菜名，挑最多 ${n} 道，為每道寫出能在餐廳販售的完整食譜。可以用無國界手法重新詮釋，但要保留原本菜色的精神。如果照片裡看不出任何菜，就依照片裡的食材或氛圍設計。`, ing && `手上有的食材（優先使用）：${ing}`);
-  lines.push(`每道 ${Math.max(1, Number(form.servings) || 1)} 份。`);
+  if (m === "idea") {
+    const k = KIND[form.kind];
+    lines.push(`這次要做的是：${k.label}。` + (isComp() ? COMP_RULE : form.kind === "dessert" ? "請設計甜點。" : ""));
+    if (goal) lines.push(`主廚明確要做的是：「${goal}」。就做這個，不要改成別的東西，也不要自己換主題；上面「不要重複」的要求只用在風味細節上。` + (n > 1 ? `請給 ${n} 個版本，它們是同一個東西的不同做法（不同手法或風味方向），不是不同的菜。` : "只要 1 個版本。"));
+    else lines.push(`請設計 ${n} 個風格明顯不同的${k.label}。`);
+    if (ing) lines.push(`手上的食材：${ing}`, "以這些食材為主角，可以只用一部分，也可以少量補充常見配料。" + AMOUNT_RULE);
+    else if (!goal) lines.push("沒有指定食材，請自行挑選當季食材。");
+    if (!isComp()) lines.push(`沒有指定份量的話，每道 ${Math.max(1, Number(form.servings) || 1)} 份。`);
+  }
+  if (m === "set") lines.push(`請設計一套 ${form.courses} 道的套餐。`, `主題：${goal || "自由發揮"}`, ing && `手上有的食材（優先使用）：${ing}`, "套餐要有輕重節奏，從清爽到濃郁再收尾；每道的主食材、烹調手法和主要味型不要重複；course 要填這道在套餐裡的位置，並照上菜順序排列。", `每道 ${Math.max(1, Number(form.servings) || 1)} 份。`);
+  if (m === "photo") lines.push(`附上的照片是菜單、菜名或一道菜。先讀出照片裡的菜名，挑最多 ${n} 道，為每道寫出能在餐廳販售的完整食譜。可以用無國界手法重新詮釋，但要保留原本菜色的精神。如果照片裡看不出任何菜，就依照片裡的食材或氛圍設計。`, ing && `手上有的食材（優先使用）：${ing}`, `每道 ${Math.max(1, Number(form.servings) || 1)} 份。`);
   if (form.extra.trim()) lines.push(`其他要求：${form.extra.trim()}`);
   lines.push(FORMAT);
   return lines.filter(Boolean).join("\n");
@@ -686,20 +853,20 @@ function shrink(file, max, q) {
     img.src = URL.createObjectURL(file);
   });
 }
-async function callApi(prompt, file) {
+async function callApi(prompt, file, onText, signal) {
   const content = [];
   for (const f of (file ? (Array.isArray(file) ? file : [file]) : [])) { const url = await shrink(f, 1568, 0.85); content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: url.split(",")[1] } }); }
   content.push({ type: "text", text: prompt });
   let res;
   try {
     res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
+      method: "POST", signal,
       headers: { "content-type": "application/json", "x-api-key": settings.apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
-      body: JSON.stringify({ model: settings.model, max_tokens: 16000, messages: [{ role: "user", content }] })
+      body: JSON.stringify({ model: settings.model, max_tokens: 16000, stream: !!onText, messages: [{ role: "user", content }] })
     });
   } catch (e) { throw { code: "network" }; }
-  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
     const msg = (data.error && data.error.message) || "";
     if (res.status === 401) throw { code: "key" };
     if (res.status === 429) throw { code: "rate_limited" };
@@ -708,8 +875,30 @@ async function callApi(prompt, file) {
     if (res.status >= 500) throw { code: "busy" };
     throw { code: "upstream_error" };
   }
-  if (data.stop_reason === "max_tokens") throw { code: "too_long" };
-  return (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
+  if (!onText) {
+    const data = await res.json().catch(() => ({}));
+    const text = (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
+    if (data.stop_reason === "max_tokens") throw { code: "too_long", text };
+    return text;
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "", text = "", stop = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+      if (!line.startsWith("data:")) continue;
+      let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
+      if (ev.type === "content_block_delta" && ev.delta && ev.delta.type === "text_delta") { text += ev.delta.text; onText(text); }
+      else if (ev.type === "message_delta" && ev.delta && ev.delta.stop_reason) stop = ev.delta.stop_reason;
+      else if (ev.type === "error") throw { code: /overloaded/.test(JSON.stringify(ev)) ? "busy" : "upstream_error", text };
+    }
+  }
+  if (stop === "max_tokens") throw { code: "too_long", text };
+  return text;
 }
 const TEACH = "你是經驗豐富的主廚，正在教一位專業廚師同事。用繁體中文、口語、直接講重點。不要用 markdown 符號（不要 # 和 *），用短段落，需要條列時用「・」。";
 function dishBrief(d) {
@@ -741,37 +930,112 @@ function copyFor(code) {
     model: "這個金鑰用不了選的腦袋，到「我的廚房」改成「標準」。",
     busy: "Claude 現在比較忙，等一下再按一次。",
     network: "網路連不上，檢查一下網路再試。",
-    too_long: "一次要的太多，寫到一半被截斷了。少要一道再試。",
+    too_long: "一次要的太多，寫到一半被截斷了。少要一個版本再試。",
     nokey: IN_CLAUDE ? "這裡目前沒辦法使用 Claude 想菜，請看最上面紅色提示怎麼處理。" : "還沒連上 AI。到「我的廚房」最下面貼上 API 金鑰。"
   })[code] || "連線出了點問題，再按一次試試。";
 }
-async function ask(prompt, statusEl, file) {
-  statusEl.className = "status";
-  statusEl.textContent = "主廚思考中，大約要半分鐘到兩分鐘，先別關掉…";
+/* progress: real progress from how much of the answer has arrived, with the part being written as the label */
+const prog = { ctrl: null, timer: null, t0: 0, pct: 0, got: false, cancelled: false };
+const STAGES = [["name", "決定名稱"], ["concept", "構思風味"], ["ingredients", "配材料和份量"], ["steps", "寫做法"], ["prep", "規劃前置作業"], ["service", "排出餐流程"], ["rush", "想尖峰怎麼出"], ["storage", "寫保存方式"], ["trim", "利用邊角料"], ["plating", "設計擺盤"], ["allergens", "標過敏原"], ["menuCopy", "寫菜單文案"], ["pitch", "寫外場介紹"], ["pairing", "搭配飲品"], ["equipment", "最後檢查"]];
+function progPaint(stage, detail) {
+  $("pBar").style.width = prog.pct + "%"; $("pPct").textContent = Math.round(prog.pct) + "%";
+  $("pBarWrap").setAttribute("aria-valuenow", String(Math.round(prog.pct)));
+  if (stage != null) $("pStage").textContent = stage;
+  if (detail != null) $("pDetail").textContent = detail;
+}
+function progStart() {
+  prog.ctrl = new AbortController(); prog.cancelled = false; prog.got = false; prog.pct = 2; prog.t0 = Date.now();
+  $("progress").hidden = false; $("pTime").textContent = "0 秒"; progPaint("主廚正在構思", "");
+  prog.timer = setInterval(() => {
+    const sec = Math.round((Date.now() - prog.t0) / 1000);
+    $("pTime").textContent = sec + " 秒";
+    if (!prog.got) { prog.pct += (12 - prog.pct) * 0.1; progPaint(sec > 25 ? "還在構思，要求複雜會久一點" : "主廚正在構思", null); }
+  }, 1000);
+}
+function progText(text, n, per) {
+  prog.got = true;
+  let stage = "主廚正在構思", at = -1;
+  for (const [k, label] of STAGES) { const i = text.lastIndexOf('"' + k + '"'); if (i > at) { at = i; stage = label; } }
+  const names = [...text.matchAll(/"name"\s*:\s*"([^"]*)"/g)], nm = names.length ? names[names.length - 1][1] : "";
+  prog.pct = Math.max(prog.pct, Math.min(97, 12 + 85 * text.length / (per * n)));
+  progPaint(stage, n > 1 ? `第 ${Math.min(Math.max(1, names.length), n)} 個／共 ${n} 個${nm ? "　" + nm : ""}` : nm);
+}
+function progEnd(ok) {
+  clearInterval(prog.timer); prog.ctrl = null;
+  if (!ok) { $("progress").hidden = true; return; }
+  prog.pct = 100; progPaint("完成", null);
+  setTimeout(() => { if (!prog.ctrl) $("progress").hidden = true; }, 600);
+}
+$("pCancel").addEventListener("click", () => { if (prog.ctrl) { prog.cancelled = true; prog.ctrl.abort(); } });
+
+async function runAI(prompt, file, onText, signal) {
+  const files = file ? [].concat(file) : [];
+  if (sample) {
+    const opts = { cache: false, signal, onText: (u) => onText(u.text) };
+    if (files.length) {
+      const lim = await sample.limits().catch(() => null);
+      if (!lim || !lim.images) throw { code: "images_unavailable" };
+      opts.images = files.slice(0, lim.images.maxCount || 1);
+    }
+    const r = await sample(prompt, opts);
+    if (r.truncated) throw { code: "too_long", text: r.text };
+    return r.text;
+  }
+  if (settings.apiKey) return callApi(prompt, files.length ? files : null, onText, signal);
+  throw { code: "nokey" };
+}
+/* keep the complete dishes from an answer that was cut off */
+function salvage(t) {
+  const a = t.indexOf("["); if (a < 0) return null;
+  let pos = t.length;
+  for (let k = 0; k < 300; k++) {
+    pos = t.lastIndexOf("}", pos - 1); if (pos < a) break;
+    try { const v = JSON.parse(t.slice(a, pos + 1) + "]"); if (Array.isArray(v) && v.length) return v; } catch (e) {}
+  }
+  return null;
+}
+async function ask(prompt, statusEl, file, n = 1, per = 2300) {
+  statusEl.className = "status"; statusEl.textContent = "";
+  if (prog.ctrl) { toast("主廚還在想上一個，等它做完，或按進度條上的取消。"); return null; }
+  progStart();
+  const signal = prog.ctrl.signal;
+  let text = "", cut = false;
   try {
+    try { text = await runAI(prompt, file, (t) => { text = t; progText(t, n, per); }, signal); }
+    catch (e) {
+      if (prog.cancelled) throw { code: "cancelled" };
+      if (!(e && e.code === "too_long")) throw e;
+      cut = true; text = e.text || text;
+    }
     let data;
-    if (sample) data = await sample.json(prompt, file ? { cache: false, images: file } : { cache: false });
-    else if (settings.apiKey) data = parseJSON(await callApi(prompt, file));
-    else throw { code: "nokey" };
+    try { data = parseJSON(text); } catch (e) { data = salvage(text); if (!data) throw { code: cut ? "too_long" : "invalid_json" }; cut = true; }
     const list = Array.isArray(data) ? data : (data && Array.isArray(data.dishes) ? data.dishes : [data]);
     const dishes = list.filter((d) => d && d.name).map(cleanDish);
-    if (!dishes.length) throw { code: "invalid_json" };
-    statusEl.textContent = "";
+    if (!dishes.length) throw { code: cut ? "too_long" : "invalid_json" };
+    progEnd(true);
+    if (cut) statusEl.textContent = `內容太長，寫到一半被截斷，先給你完整的 ${dishes.length} 個。要更多可以再按一次。`;
     return dishes;
   } catch (e) {
+    progEnd(false);
+    if (e && e.code === "cancelled") { statusEl.textContent = "已取消。你填的內容都還在。"; return null; }
     statusEl.className = "status err";
     statusEl.textContent = copyFor(e && e.code);
     return null;
   }
 }
 $("goBtn").addEventListener("click", async () => {
-  if (form.mode === "photo" && !photoFile) { $("status").className = "status err"; $("status").textContent = "先拍一張照片或選一張圖。"; return; }
+  const m = form.mode, faithful = m === "own" || recipeShot(), st = $("status");
+  if (m === "photo" && !photoFile) { st.className = "status err"; st.textContent = "先拍一張照片或選一張圖。"; return; }
+  if (m === "own" && !form.ownText.trim()) { st.className = "status err"; st.textContent = "先貼上或打你的配方。"; return; }
+  const n = m === "set" ? Number(form.courses) : faithful ? 1 : Number(form.versions) || 1;
+  const per = faithful || (m === "idea" && isComp()) ? 1500 : 2300;
   $("goBtn").disabled = true;
-  const dishes = await ask(buildPrompt(), $("status"), form.mode === "photo" ? photoFile : null);
+  const dishes = await ask(buildPrompt(), st, m === "photo" ? photoFile : null, n, per);
   $("goBtn").disabled = false;
   if (dishes) {
-    recent = [...dishes.map((d) => d.name + (d.menuCopy ? "（" + d.menuCopy + "）" : "")), ...recent].slice(0, 15); store.set("recent", recent);
-    results = dishes; persistResults(); renderResults(); $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    if (faithful) dishes.forEach((d) => { d.own = true; });
+    else { recent = [...dishes.map((d) => d.name + (d.menuCopy ? "（" + d.menuCopy + "）" : "")), ...recent].slice(0, 15); store.set("recent", recent); }
+    addResults(dishes);
   }
 });
 
@@ -780,13 +1044,14 @@ function recipeText(d) {
   const L = [];
   const sec = (t, a) => { if (a && a.length) L.push("", "【" + t + "】", ...a); };
   L.push((d.course ? d.course + "｜" : "") + d.name, d.tagline);
-  sec(`材料（${d.servings} 份）`, d.ingredients.map((i) => `・${i.item} ${i.amount}`));
+  sec(d.kind === "component" ? `材料${d.output ? "（成品 " + d.output + "）" : ""}` : `材料（${fmtNum(d.servings)} 份）`, d.ingredients.map((i) => `・${i.item} ${i.amount}`));
   sec("做法", d.steps.map((s, i) => `${i + 1}. ${s}`));
   sec("前置作業", d.prep.map((s) => "・" + s));
   sec("出餐流程", d.service.map((s, i) => `${i + 1}. ${s.step}${s.station ? "（" + s.station + (s.min ? "，約 " + s.min + " 分" : "") + "）" : ""}`));
   sec("尖峰出餐", d.rush.map((s) => "・" + s));
   sec("保存方式", d.storage.map((s) => "・" + s));
   sec("擺盤", d.plating.map((s) => "・" + s));
+  sec("可以用在", d.uses.map((s) => "・" + s));
   if (d.allergens.length) L.push("", "過敏原：" + d.allergens.join("、"));
   return L.filter((x) => x != null).join("\n");
 }
@@ -804,11 +1069,16 @@ function dishCard(d, ctx) {
   let tab = "recipe", planN = 20;
   const changed = () => { ctx.saved ? persistSaved() : persistResults(); draw(); };
   const quiet = () => { ctx.saved ? persistSaved() : persistResults(); };
-  const setServ = (n) => {
-    if (n < 1 || n > 500) return;
-    const r = n / d.servings;
+  let undo = null, editing = false, link = true;
+  const snap = () => JSON.stringify({ s: d.servings, o: d.output, i: d.ingredients });
+  const restore = () => { if (!undo) return; const o = JSON.parse(undo); d.servings = o.s; d.output = o.o; d.ingredients = o.i; undo = null; changed(); toast("已復原。"); };
+  const scaleAll = (r, msg) => {
+    if (!(r > 0) || !isFinite(r) || r === 1) return;
+    undo = snap();
     d.ingredients.forEach((i) => { i.amount = scaleAmt(i.amount, r); i.cost = Math.round(i.cost * r); });
-    d.servings = n; changed();
+    d.servings = Math.max(0.1, round1(d.servings * r));
+    if (d.output) d.output = scaleAmt(d.output, r);
+    changed(); if (msg) toast(msg);
   };
   const sec = (title, node) => el("div", {}, el("h3", {}, title), node);
   const list = (a, ordered) => el(ordered ? "ol" : "ul", {}, a.map((s) => el("li", {}, s)));
@@ -844,18 +1114,53 @@ function dishCard(d, ctx) {
       d.qa.map((x) => el("div", {}, el("h3", {}, "問：" + x.q), el("div", { class: "explain" }, x.a))));
   }
   function recipePane() {
-    const minus = el("button", { type: "button", "aria-label": "少一份", onclick: () => setServ(d.servings - 1) }, "−");
-    const plus = el("button", { type: "button", "aria-label": "多一份", onclick: () => setServ(d.servings + 1) }, "+");
-    const ing = el("div", { class: "ing" });
-    d.ingredients.forEach((i) => {
-      const amt = el("input", { type: "text", value: i.amount, "aria-label": i.item + " 份量" });
-      amt.addEventListener("change", () => { const a = numOf(i.amount), b = numOf(amt.value); if (a && b != null) i.cost = Math.round(i.cost * b / a); i.amount = amt.value.trim(); changed(); });
-      ing.append(el("span", {}, i.item), amt);
+    const unit = d.kind === "component" || d.own ? "批數" : "份數";
+    const minus = el("button", { type: "button", "aria-label": "少一份", onclick: () => { const n = Math.ceil(d.servings) - 1; if (n >= 1) scaleAll(n / d.servings); } }, "−");
+    const plus = el("button", { type: "button", "aria-label": "多一份", onclick: () => scaleAll((Math.floor(d.servings) + 1) / d.servings) }, "+");
+    const mul = el("input", { type: "number", min: "0.1", step: "0.1", inputmode: "decimal", placeholder: "例如 15", "aria-label": "放大幾倍", style: "width:96px" });
+    const mulBtn = el("button", { class: "ghost small", type: "button", onclick: () => { const x = Number(mul.value); if (!(x > 0)) { toast("先填要變成幾倍，例如 15，或 0.5 是減半。"); return; } scaleAll(x, `全部材料變成 ${fmtNum(x)} 倍。`); } }, "套用");
+    const linkSeg = el("div", { class: "seg", role: "group", "aria-label": "改份量的方式" }, [[true, "等比例換算"], [false, "只改這一項"]].map(([v, t]) => el("button", { type: "button", "aria-selected": link === v ? "true" : "false", onclick: () => { link = v; draw(); } }, t)));
+    const ing = el("div", { class: "ing ed" });
+    d.ingredients.forEach((i, idx) => {
+      const nm = el("input", { type: "text", class: "nm", value: i.item, placeholder: "材料名稱", "aria-label": "材料名稱" });
+      nm.addEventListener("change", () => { i.item = nm.value.trim(); quiet(); });
+      const amt = el("input", { type: "text", value: i.amount, placeholder: "份量", "aria-label": (i.item || "材料") + " 份量" });
+      amt.addEventListener("change", () => {
+        const v = amt.value.trim(), old = i.amount, r = ratioOf(old, v);
+        if (v === old) return;
+        if (link && r) { scaleAll(r, `其他材料也跟著變成 ${fmtNum(r)} 倍。`); return; }
+        undo = snap();
+        if (r) { i.cost = Math.round(i.cost * r); i.amount = scaleAmt(old, r); } else i.amount = v;
+        changed();
+        if (link && numOf(old) != null && numOf(v) != null) toast("這一項的單位對不上，所以只改了這一項。");
+      });
+      const del = el("button", { type: "button", class: "x", "aria-label": "刪掉" + (i.item || "這一項"), onclick: () => { undo = snap(); d.ingredients.splice(idx, 1); changed(); toast("已刪掉，按「復原上一步」可以救回來。"); } }, "×");
+      ing.append(nm, amt, del);
     });
+    const add = el("button", { class: "ghost small", type: "button", onclick: () => { d.ingredients.push({ item: "", amount: "", yield: 100, cost: 0 }); draw(); const ins = card.querySelectorAll(".ing.ed .nm"); if (ins.length) ins[ins.length - 1].focus(); } }, "＋ 加一項材料");
+    let stepsBox;
+    if (editing) {
+      const nameIn = el("input", { type: "text", value: d.name, "aria-label": "名稱" });
+      const ta = el("textarea", { style: "min-height:180px", "aria-label": "做法，一行一個步驟" }); ta.value = d.steps.join("\n");
+      const done = el("button", { class: "ghost", type: "button", style: "align-self:flex-start", onclick: () => { d.name = nameIn.value.trim() || d.name; d.steps = ta.value.split("\n").map((x) => x.trim()).filter(Boolean); editing = false; changed(); } }, "完成");
+      stepsBox = el("div", {}, el("h3", {}, "編輯名稱和做法　一行一個步驟"), el("div", { class: "field" }, nameIn, ta, done));
+    } else {
+      stepsBox = el("div", {},
+        el("div", { class: "labelrow", style: "margin-bottom:6px" }, el("h3", {}, d.steps.length ? "做法　不懂的步驟按「教我細節」" : "做法"),
+          !d.example && el("button", { class: "ghost small", type: "button", onclick: () => { editing = true; draw(); } }, d.steps.length ? "編輯" : "加上做法")),
+        d.steps.length ? stepsNode() : el("p", { class: "hint" }, "還沒有做法。"));
+    }
     return el("div", { class: "pane" },
-      el("div", {}, el("h3", {}, "材料　份量可以直接改"),
-        el("div", { class: "serv" }, el("span", {}, "份數"), minus, el("span", { class: "num" }, d.servings), plus, el("span", { class: "hint" }, "按 ＋－ 自動換算")), ing),
-      d.steps.length && sec("做法　不懂的步驟按「教我細節」", stepsNode()),
+      el("div", {}, el("h3", {}, "材料"),
+        d.output && el("p", { style: "margin-bottom:8px" }, "這一批做出來：", el("b", {}, d.output)),
+        el("div", { class: "scalebox" },
+          linkSeg,
+          el("p", { class: "hint" }, link ? "改任何一項的量，其他材料會照比例一起變。例如把蝦頭改成 3 公斤。" : "只改你動的那一項，其他不變。用來微調配方。"),
+          el("div", { class: "serv" }, el("span", {}, unit), minus, el("span", { class: "num" }, fmtNum(d.servings)), plus),
+          el("div", { class: "mulrow" }, el("span", {}, "整份變成"), mul, el("span", {}, "倍"), mulBtn, undo && el("button", { class: "ghost small", type: "button", onclick: restore }, "復原上一步"))),
+        ing, el("div", { style: "margin-top:8px" }, add)),
+      stepsBox,
+      d.uses.length && sec("可以用在", list(d.uses)),
       d.plating.length && sec("擺盤", list(d.plating)),
       d.equipment.length && el("div", { class: "pills" }, d.equipment.map((s) => el("span", { class: "pill" }, s)))
     );
@@ -879,7 +1184,7 @@ function dishCard(d, ctx) {
       d.storage.length && el("div", {}, el("h3", {}, "保存方式"), list(d.storage), el("p", { class: "note", style: "margin-top:8px" }, "保存天數和溫度是估算，實際請以你的專業判斷和衛生法規為準。")),
       d.reuse.length && sec("沿用現有半成品", list(d.reuse)),
       d.trim.length && sec("邊角料利用", list(d.trim)),
-      el("div", {}, el("h3", {}, "備料換算"), el("div", { class: "serv" }, el("span", {}, "今晚預計賣"), n, el("span", {}, "份")), table,
+      d.kind !== "component" && el("div", {}, el("h3", {}, "備料換算"), el("div", { class: "serv" }, el("span", {}, "今晚預計賣"), n, el("span", {}, "份")), table,
         el("p", { class: "hint", style: "margin-top:6px" }, "「要買的量」已經算進去皮去骨的損耗。"))
     );
   }
@@ -933,13 +1238,21 @@ function dishCard(d, ctx) {
   function draw() {
     card.replaceChildren();
     if (d.example) card.append(el("span", { class: "tag" }, "範例　按上面的按鈕產生你的菜"));
-    else if (d.course || ctx.saved) card.append(el("span", { class: "tag" }, [d.course, ctx.saved ? STATUS[d.status] : "", ctx.saved && d.rating ? "★".repeat(d.rating) : ""].filter(Boolean).join("　")));
+    else { const tags = [d.course, d.own ? "我的配方" : "", d.kind === "component" ? "半成品" : "", ctx.saved ? STATUS[d.status] : "", ctx.saved && d.rating ? "★".repeat(d.rating) : ""].filter(Boolean); if (tags.length) card.append(el("span", { class: "tag" }, tags.join("　"))); }
     card.append(el("h2", {}, d.name));
     if (d.tagline) card.append(el("p", { class: "tagline" }, d.tagline));
+    const svcMin = d.service.reduce((a, x) => a + x.min, 0), totalCost = d.ingredients.reduce((a, i) => a + i.cost, 0);
+    const stats = [d.kind === "component" ? (d.output ? "成品 " + d.output : "") : fmtNum(d.servings) + " 份", svcMin ? "出餐約 " + svcMin + " 分" : "", form.costOn && totalCost ? (d.kind === "component" ? "成本 NT$ " + totalCost : "每份 NT$ " + Math.round(totalCost / d.servings)) : ""].filter(Boolean);
+    if (stats.length) card.append(el("div", { class: "pills" }, stats.map((x) => el("span", { class: "pill num" }, x))));
     if (d.allergens.length) card.append(el("div", { class: "pills", "aria-label": "過敏原" }, d.allergens.map((a) => el("span", { class: "pill warn" }, a))));
     if (d.influences.length) card.append(el("div", { class: "pills", "aria-label": "手法來源" }, d.influences.map((x) => el("span", { class: "pill src" }, el("b", {}, x.from.replace(/（.*?）/, "")), "　", x.what))));
 
-    const tabs = [["recipe", "食譜"], ["ops", "備料出餐"], ["flavor", "風味賣點"]];
+    const comp = d.kind === "component";
+    const hasOps = !comp || d.prep.length || d.storage.length || d.reuse.length || d.trim.length;
+    const hasFlavor = d.concept || d.logic.length || d.season || d.menuCopy || d.pitch || d.pairing.length || d.veg;
+    const tabs = [["recipe", comp || d.own ? "配方" : "食譜"]];
+    if (hasOps) tabs.push(["ops", comp ? "備料保存" : "備料出餐"]);
+    if (hasFlavor) tabs.push(["flavor", comp ? "風味重點" : "風味賣點"]);
     if (!d.example) tabs.push(["ask", "問主廚"]);
     if (form.costOn) tabs.push(["cost", "成本"]);
     if (ctx.saved) tabs.push(["log", "試做紀錄"]);
@@ -983,9 +1296,9 @@ function dishCard(d, ctx) {
         btn.disabled = true;
         const { photo, notes, rating, status, savedAt, id, _saved, example, tips, qa, ...base } = d;
         const prompt = [...kitchenContext(form.extra + " " + req), `下面是一道菜（JSON），請依照廚師的要求調整，給 ${n.value} 個不同的調整版本。`, `廚師的要求：${req}`, `原本的菜：${JSON.stringify(base)}`, FORMAT].join("\n");
-        const dishes = await ask(prompt, st, null);
+        const dishes = await ask(prompt, st, null, Number(n.value), d.kind === "component" ? 1500 : 2300);
         btn.disabled = false;
-        if (dishes) { results = [...dishes, ...results.filter((x) => !x.example)].slice(0, 12); persistResults(); setView("make"); renderResults(); $("results").scrollIntoView({ behavior: "smooth", block: "start" }); toast("調整好的版本在最上面。"); }
+        if (dishes) { setView("make"); addResults(dishes); toast("調整好的版本在最上面。"); }
       });
       card.append(el("div", { class: "adjust" }, el("span", { class: "label" }, "調整這道菜"), box, el("div", { class: "row" }, n, btn), st));
     }
@@ -993,7 +1306,7 @@ function dishCard(d, ctx) {
   draw();
   return card;
 }
-function renderResults() { $("results").replaceChildren(...results.map((d) => dishCard(d, { saved: false }))); }
+function renderResults() { $("results").replaceChildren(...results.map((d) => dishCard(d, { saved: false }))); $("resultsHead").hidden = !results.some((d) => !d.example); }
 function renderSaved() {
   const list = saved.filter((d) => filter === "all" || d.status === filter);
   if (!saved.length) return $("savedList").replaceChildren(el("div", { class: "empty" }, "還沒有存任何菜。想出喜歡的菜之後，按「存起來」就會出現在這裡。"));
